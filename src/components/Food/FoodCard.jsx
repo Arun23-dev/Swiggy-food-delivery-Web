@@ -1,4 +1,3 @@
-import { FoodData } from "../../Utils/FoodData";
 
 export default function FoodCard({ fooddata }) {
   return (

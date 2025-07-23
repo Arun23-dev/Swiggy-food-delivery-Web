@@ -21,7 +21,7 @@ export default function FoodOption() {
     const maxScrollLeft = scrollElement.scrollWidth - scrollElement.clientWidth;
 
     setButtonLeft(scrollLeftVal > 0);
-    setButtonRight(scrollLeftVal < maxScrollLeft - 1); // adjust for pixel rounding
+    setButtonRight(scrollLeftVal < maxScrollLeft - 1); 
   };
 
   useEffect(() => {
