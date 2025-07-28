@@ -1,4 +1,5 @@
 export default function DineCard({ resturantdata }) {
+  
 
   return (
     <div className=" min-w-[326px] min-h-[378px] rounded-2xl border-[#e3dada] border-[0.5px]">
@@ -7,7 +8,7 @@ export default function DineCard({ resturantdata }) {
             <img
               src={`https://media-assets.swiggy.com/swiggy/image/upload/${resturantdata?.info?.mediaFiles[0]?.url}`}
               alt={resturantdata?.info?.name ?? "Restaurant Image"}
-              className="min-h-[11.8rem] h-[11.8rem] min-w-[20.375rem] rounded-t-xl "
+              className="min-h-[11.8rem] h-[11.8rem] min-w-[20.375rem] rounded-t-xl object-cover "
             />
           </a>
           <h2 className="absolute text-white text-[20px] bottom-3 z-10 font-extrabold left-3 cov ">

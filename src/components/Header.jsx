@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 function Header() {
   return (
     <header className="bg-[#ff5200] font-serif">
@@ -94,13 +95,14 @@ function Header() {
 
       <div>
         <div className="flex justify-center ">
-         <a href="https://www.swiggy.com/restaurants" >
+        <Link to="/resturants">
           <img
             src="https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/MERCHANDISING_BANNERS/IMAGES/MERCH/2024/7/23/ec86a309-9b06-48e2-9adc-35753f06bc0a_Food3BU.png"
             alt="img3"
             className="h-[18.75rem] w-[20.375rem]"
           />
-          </a> 
+          </Link>
+          
 
         <a href="https://www.swiggy.com/instamart?entryId=1234&entryName=mainTileEntry4&v=1" >
           <img src="https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/MERCHANDISING_BANNERS/IMAGES/MERCH/2024/7/23/b5c57bbf-df54-4dad-95d1-62e3a7a8424d_IM3BU.png"
@@ -109,12 +111,12 @@ function Header() {
            />
           </a>
 
-          <a href="https://www.swiggy.com/dineout" >
+          <Link to="/resturants">
           <img src="https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/MERCHANDISING_BANNERS/IMAGES/MERCH/2024/7/23/b6d9b7ab-91c7-4f72-9bf2-fcd4ceec3537_DO3BU.png"
           alt="img5"
             className="h-[18.75rem] w-[20.375rem]"
           />
-        </a>
+         </Link>
         </div>
       </div>
  

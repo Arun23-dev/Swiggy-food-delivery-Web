@@ -12,10 +12,10 @@ export default function FoodDelivery() {
             <a href={data.link} key={data.link}>
               <div
                 
-                className="min-h-[71px] min-w-[231px] border-solid border-[1.5px] border-[#02060c26]  rounded-xl p-4
-                 items-center justify-center flex text-center"
+                className="h-[71px] min-w-[231px] border-solid border-[1.5px] border-[#02060c26]  rounded-xl p-4
+                 items-center  justify-center flex text-center"
               >
-                <div className="min-h-[36px] max-w-[194px] text-[14px]  ">
+                <div className="min-h-[36px] max-w-[194px] text-[14px] flex items-center">
                   {data.text}
                 </div>
               </div>
