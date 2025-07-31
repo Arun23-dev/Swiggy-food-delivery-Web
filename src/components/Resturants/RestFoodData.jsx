@@ -33,8 +33,8 @@ export default function RestFoodData({ foodData }) {
   }, []);
 
   return (
-    <div className="w-[80%] mx-auto container gap-10  mb-5 mt-5 min-h-[221px] h-[221px] ">
-      <div className="relative">
+    <div className="w-[80%] mx-auto container gap-10  mb-5 mt-5 min-h-[221px] h-[221px] pt-20">
+      <div className="relative ">
          <h2 className=" left-[10%] text-[24px] font-semibold min-h-[26px] text-[#02060ceb]">
           What's on your mind?
         </h2>
@@ -79,6 +79,8 @@ export default function RestFoodData({ foodData }) {
           ))}
         </div>
       </div>
+
+      <hr className=" border mt-5 border-gray-500"></hr>
     </div>
   );
 }

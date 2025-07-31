@@ -18,19 +18,19 @@ export default function MenuCard({ menuCard }) {
       </div>
 
       
-      <div className="relative  w-[20%] ">
-        <div>
+      <div className="relative  w-[20%] h-[154px]">
+        
           <img
             src={`https://media-assets.swiggy.com/swiggy/image/upload/${menuCard?.imageId}`}
             alt=""
-            className="object-cover h-[144px] max-w-[156px] w-[156px]"
+            className="object-cover h-[144px] max-w-[156px] w-[156px] rounded-xl"
           />
-        </div>
+      
         <button
           className="w-[120px] h-[38px] text-center
             border-gray-400  border-2 rounded-xl cursor-pointer  bg-white px-4 py-2
             shadow-lg 
-             text-[#1BA672] font-semibold text-[18px] absolute bottom-0 z-20 right-15"
+             text-[#1BA672] font-semibold text-[18px] absolute  z-20 left-5 bottom-0"
         >
           ADD
         </button>

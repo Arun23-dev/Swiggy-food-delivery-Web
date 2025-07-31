@@ -1,12 +1,13 @@
 export default function DineHeader() {
   return (
-    <div className="px-5">
-      <div className="flex justify-between max-w-[1200px] h-[80px]  mx-auto container items-center">
+  
+    <div className="px-5  fixed top-0 w-full  z-50 bg-white shadow-sm">
+      <div className="flex justify-between max-w-[1200px] h-[80px] mx-auto container   items-center">
         {/* this is for logo and location */}
         <div className="flex justify-center gap-3">
           {/* logo */}
           <div>
-            <svg viewBox="0 0 61 61" height="49" width="49">
+           <svg viewBox="0 0 61 61" height="49" width="49">
               <g clip-path="url(#a)">
                 <path
                   fill="#FF5200"
@@ -58,7 +59,7 @@ export default function DineHeader() {
           <div className="flex items-center gap-2">
             <span>
               <svg
-                class="ppAwf"
+              
                 viewBox="0 0 20 20"
                 height="20"
                 width="20"

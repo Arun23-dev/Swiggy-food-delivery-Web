@@ -1,7 +1,9 @@
 import { useRef, useState, useEffect } from "react";
 
 export default function RestuarnatAllFood({ CategoryWise, ResturantAllFood }) {
-  console.log(ResturantAllFood);
+
+
+
   return (
     <div className=" w-[80%] justify-center mx-auto container">
       <div className="">
@@ -11,7 +13,6 @@ export default function RestuarnatAllFood({ CategoryWise, ResturantAllFood }) {
       <div>
         <div className="flex justify-start">
           <div>Filter</div>
-          <div>i am hero</div>
         </div>
         <div className="flex justify-start">
           <div>Sort By</div>
@@ -39,7 +40,7 @@ export default function RestuarnatAllFood({ CategoryWise, ResturantAllFood }) {
               <div className="relative">
                 {/* Image */}
                 <img
-                  className=" h-[144px] min-w-[273px] w-[273px]  rounded-xl object-cover"
+                  className=" h-[190px] min-[190px]1 min-w-[273px] w-[273px]  rounded-xl object-cover"
                   src={`https://media-assets.swiggy.com/swiggy/image/upload/${data?.info?.cloudinaryImageId}`}
                   alt={data?.info?.name ?? "Food Image"}
                 />

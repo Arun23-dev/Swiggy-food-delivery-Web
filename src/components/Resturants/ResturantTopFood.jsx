@@ -33,7 +33,7 @@ export default function ResturantTopFood({ TopFoodData }) {
   }, []);
 
   return (
-    <div className=" w-[80%] mx-auto container  p-4 h-[379.492px]">
+    <div className=" w-[80%] mx-auto container mt-40  h-[379.492px]">
       {/* arrow and header */}
       <div className="mb-4 h-[25.195px]  flex justify-between ">
         <h2 className="text-[21px] font-bold  text-[#02060ceb]">
