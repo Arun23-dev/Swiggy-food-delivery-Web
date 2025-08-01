@@ -9,7 +9,7 @@ export default function MenuList({ menuitems, foodSelected }) {
       <div className="mt-[26px] mb-4 w-full">
         <div className="flex justify-between">
           <div className="pr-4  mb-6 cursor-pointer text-black text-[18px] font-extrabold">
-            {menuitems.title}
+            {menuitems.title}{` `}({menuitems?.itemCards?.length})
           </div>
           <button className="text-4xl pr-15" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? "⌃" : "⌄"}
@@ -89,12 +89,11 @@ export default function MenuList({ menuitems, foodSelected }) {
     );
   }
 
+  console.log()
   return (
     <div className="mt-[26px] mb-4 w-full  ">
       <div className="flex justify-between">
-        <div className="pr-4  mb-6 cursor-pointer text-black text-[18px] font-extrabold">
-          {menuitems.title}
-        </div>
+        <div className="pr-4  mb-6 cursor-pointer text-black text-[18px] font-extrabold">{menuitems.title}{` `}({menuitems?.itemCards?.length}) </div>
         <button className="text-4xl pr-15" onClick={() => setIsOpen(!isOpen)}>
           {isOpen ? "⌃" : "⌄"}
         </button>
