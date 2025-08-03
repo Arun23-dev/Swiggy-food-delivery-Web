@@ -1,11 +1,8 @@
 import { useState } from "react";
 
-
 export default function BestCuisines({CuisineData}){
    
-         const [dataShow, setDataShow] = useState(11);
-        
-          
+         const [dataShow, setDataShow] = useState(11); 
           const title = CuisineData?.title || "";
           const brands = CuisineData?.brands || [];
         

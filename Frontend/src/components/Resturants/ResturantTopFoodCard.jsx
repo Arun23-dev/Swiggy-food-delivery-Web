@@ -2,18 +2,12 @@ import { NavLink, Link } from "react-router";
 export default function ResturantTopFoodCard({data}){
 
     return (
-      <Link to={`/city/delhi/${data?.info?.id}`}>  
-            <div className="pr-10 [w-273] [h-286.297px]  ">
-             <a  href={data?.cta?.link ?? "#" }
-             className="cursor-pointer  block transform  hover:scale-95 transition duration-50 ease-in-out w-[273px] 
-             " >
+             <Link to={`/city/delhi/${data?.info?.id}`}>  
+            <div className="pr-10 [w-273px] [h-286.297px]  ">
+             <div className="cursor-pointer  block transform  hover:scale-95 transition duration-50 ease-in-out w-[273px] " >
               <div className="relative ">
                 {/* Image */}
-                <img
-                  className="min-h-[182px] h-[182px] w-[273px]  min-w-[273px]  rounded-xl object-cover "
-                  src={`https://media-assets.swiggy.com/swiggy/image/upload/${data?.info?.cloudinaryImageId}`}
-                  alt={data?.info?.name ?? "Food Image"}
-                />
+                <img className="min-h-[182px] h-[182px] w-[273px]  min-w-[273px]  rounded-xl object-cover " src={`https://media-assets.swiggy.com/swiggy/image/upload/${data?.info?.cloudinaryImageId}`}alt={data?.info?.name ?? "Food Image"}/>
                  {/* Gradient + Header/SubHeader */}
                 <div className="absolute bottom-0 left-0 w-full  h-[60px] font-extrabold
                 bg-gradient-to-t from-black/70 to-transparent rounded-b-xl px-3 flex items-end pb-2 text-white text-[20px]">
@@ -88,7 +82,7 @@ export default function ResturantTopFoodCard({data}){
                   {data?.info?.areaName}
                 </div>
               </div>
-            </a>
+            </div>
             </div>  
             </Link>      
     );

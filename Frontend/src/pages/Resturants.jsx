@@ -1,4 +1,4 @@
-import DineHeader from "../components/Resturants/DineHeader";
+import DineHeader from "../components/Header/DineHeader";
 import ResturantDataFetch from "../components/Resturants/ResturantDataFetch";
 import Footer from "../components/Footer/Footer";
 function Resturants() {

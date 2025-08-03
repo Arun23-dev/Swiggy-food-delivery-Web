@@ -3,6 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import DineCard from "./DineCard";
 
 export default function DineOption() {
+
+  
+  // console.log(DineData);
   const scrollRef = useRef();
   const [buttonLeft, setButtonLeft] = useState(false);
   const [buttonRight, setButtonRight] = useState(true);
@@ -67,13 +70,16 @@ export default function DineOption() {
         </div>
       </div>
 
+
       {/* Scrollable Dine cards */}
       <div
         ref={scrollRef}
         className="flex flex-nowrap overflow-x-auto scrollbar-hide min-h-[409px] gap-10 scroll-smooth "
       >
+      
         {DineData.map((data) => (
-          <DineCard key={data.id} resturantdata={data} />
+         
+          <DineCard key={data?.info?.id} resturantdata={data} />
         ))}
       </div>
     </div>

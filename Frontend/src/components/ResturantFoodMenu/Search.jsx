@@ -10,8 +10,8 @@ export default function Search() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const proxy = "https://cors-anywhere.herokuapp.com/";
-        const swiggyFoodMenuAPI = `https://www.swiggy.com/dapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${id}&catalog_qa=undefined&submitAction=ENTER`;
+        // const proxy = "https://cors-anywhere.herokuapp.com/";
+        // const swiggyFoodMenuAPI = `https://www.swiggy.com/dapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${id}&catalog_qa=undefined&submitAction=ENTER`;
 
         const response = await fetch(proxy + swiggyFoodMenuAPI);
         const data = await response.json();

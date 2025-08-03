@@ -98,7 +98,7 @@ export default function ResturantDataFetch() {
       <RestFoodData foodData={foodData} />
       <ResturantTopFood TopFoodData={TopFoodData} />
       <RestuarnatAllFood CategoryWise={CategoryWise} ResturantAllFood={ResturantAllFood} />
-      {hasMore && <div ref={loaderRef} className="h-10 bg-transparent"></div>}
+      {/* {hasMore && <div ref={loaderRef} className="h-10 bg-transparent"></div>} */}
       <BestPlacesToEat  BestPlacesData={BestPlacesData}/>
       <BestCuisines CuisineData={CuisineData} />
       <ExploreResturant ExploreResturantData={ExploreResturantData}/>
