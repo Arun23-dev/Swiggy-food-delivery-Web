@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import MenuList from "./MenuList";
 
 export default function ResturantFoodMenu() {
-  let { id } = useParams();
+  let { restaurantId } = useParams();
     const [RestData, setRestData] = useState(null);
     const [selected, SetSelected] = useState(null);
 
@@ -13,24 +13,21 @@ export default function ResturantFoodMenu() {
     const FilteredData = temp?.filter(
         (items) => "title" in items?.card?.card
       );
-
       const  orderOnline=RestData?.data?.cards[2]?.card?.card?.info;
-      console.log(orderOnline);
-
 
 
   useEffect(() => {
     async function fetchData() {
-      const proxy = "https://cors-anywhere.herokuapp.com/";
-      const swiggyFoodMenuAPI = `https://www.swiggy.com/dapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${id}&catalog_qa=undefined&submitAction=ENTER`;
-      const response = await fetch(proxy + swiggyFoodMenuAPI);
+      // const proxy = "https://cors-anywhere.herokuapp.com/";
+      // const swiggyFoodMenuAPI = `https://www.swiggy.com/dapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${id}&catalog_qa=undefined&submitAction=ENTER`;
+         const url = `${import.meta.env.VITE_FOODMENU_URL}${restaurantId}`;
+
+      const response = await fetch();
       const data = await response.json();
       setRestData(data);
     }
     fetchData();
   }, []);
-
- 
 
   return (
     <div className="w-full ">
@@ -40,7 +37,6 @@ export default function ResturantFoodMenu() {
         </div>
       </Link>
 
-      {     /* order online and dine out div */}
     
         <div className="h-[146px]  border rounded-xl solid w-[600px] justify-center">
           <div></div>

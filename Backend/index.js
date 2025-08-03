@@ -13,8 +13,7 @@ app.use(cors(corsOptions));
 
 const PORT = process.env.PORT || 5000;
 
-
-app.get('/restaurants', async (req, res) => {
+app.get('/resturants', async (req, res) => {
   const offset = req.query.offset || 0;
 
   try {

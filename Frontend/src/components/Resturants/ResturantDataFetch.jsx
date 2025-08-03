@@ -8,15 +8,17 @@ import ExploreResturant from "./ExploreResturant";
 
 
 export default function ResturantDataFetch() {
+
+
   const [Data, setData] = useState({});
   const [ResturantAllFood, setResturantAllFood] = useState([]);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef();
 
-  const proxyServer = "https://cors-anywhere.herokuapp.com/";
-  const baseAPI = "https://www.swiggy.com/dapi/restaurants/list/v5";
-  const queryParams = "?lat=28.7040592&lng=77.10249019999999&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING";
+  // const proxyServer = "https://cors-anywhere.herokuapp.com/";
+  // const baseAPI = "https://www.swiggy.com/dapi/restaurants/list/v5";
+  // const queryParams = "?lat=28.7040592&lng=77.10249019999999&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING";
 
   const foodData = Data?.data?.cards?.[0]?.card?.card?.imageGridCards?.info;
   const TopFoodData = Data?.data?.cards?.[1]?.card?.card?.gridElements?.infoWithStyle?.restaurants;
@@ -39,7 +41,7 @@ export default function ResturantDataFetch() {
   useEffect(() => {
     async function fetchInitialData() {
       try {
-        const response = await fetch(proxyServer + baseAPI + queryParams);
+        const response = await fetch(import.meta.env.VITE_RESTURANT_URL);
         const data = await response.json();
         setData(data);
 
@@ -56,8 +58,8 @@ export default function ResturantDataFetch() {
   async function loadMoreData() {
     if (!hasMore) return;
     try {
-      const url = `${proxyServer}${baseAPI}${queryParams}&offset=${offset}`;
-      const response = await fetch(url);
+    
+      const response = await fetch(`${BASE_URL}?offset=${offset}`);
       const json = await response.json();
       const moreRestaurants = extractRestaurantsFromCards(json?.data?.cards);
 
