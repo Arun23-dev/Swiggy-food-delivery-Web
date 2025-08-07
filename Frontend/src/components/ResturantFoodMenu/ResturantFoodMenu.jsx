@@ -1,6 +1,7 @@
 import { useEffect, useState,useRef } from "react";
 import { useParams, Link } from "react-router";
 import MenuList from "./MenuList";
+import ShimmerMenuPage from "../Shimmer/ShimmerMenuPage";
 
 export default function ResturantFoodMenu() {
         const { restaurantId } = useParams();
@@ -45,7 +46,6 @@ export default function ResturantFoodMenu() {
     async function fetchData() {
 
 
-      console.log("Hello inside the fetch data");
       // const proxy = "https://cors-anywhere.herokuapp.com/";
       // const swiggyFoodMenuAPI = `https://www.swiggy.com/dapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${id}&catalog_qa=undefined&submitAction=ENTER`;
      
@@ -62,8 +62,13 @@ export default function ResturantFoodMenu() {
   }, [restaurantId]);
 
 
+  if(!RestData)
+  {
+    return(
+      <ShimmerMenuPage></ShimmerMenuPage>
+    )
+  }
 
-  console.log(Offers);
   return (
     <div className="w-full pt-24">
       <div className="w-[800px] mx-auto">
@@ -150,21 +155,14 @@ export default function ResturantFoodMenu() {
                   Offers?.map((data)=>{
                     return (
                       <div className="w-[328px] h-[76px] border border-gray-300 rounded-2xl "   key={data?.info?.offerIds?.[0] || data?.info?.couponCode} >
-                      
-                    <div className="w-[300px] h-[48px] mx-auto mt-3 ml-3 flex" >
-
-
+                       <div className="w-[300px] h-[48px] mx-auto mt-3 ml-3 flex" >
                       <img src={`https://media-assets.swiggy.com/swiggy/image/upload/${data?.info?.offerLogo}`} className="h-12 w-12"></img>
                       <div className="ml-3">
-
                         <div className="text-[18px] font-extrabold hover:cursor-pointer">{data?.info?.header}</div>
                         <div className="text-[14px] font-semibold text-[#02060c73]">{data?.info?.description}</div>
-                      
                       </div>    
-                      
                     </div>
                     </div>
-
                   )
 
                   })
