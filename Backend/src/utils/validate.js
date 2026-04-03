@@ -5,7 +5,6 @@ const validate=(data)=>{
     const isAllowed=mandatoryField.every((k)=>Object.keys(data).includes(k));
 
     if(!isAllowed){
-        console.log("Hello");
         throw new Error("Field missing");
     }
     if(!Validator.isEmail(data.emailId)){

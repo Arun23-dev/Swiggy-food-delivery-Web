@@ -11,8 +11,7 @@ const register=async (req,res)=>{
 
         try{
                console.log("Register endpoint hit");
-            
-           
+
             validate(req.body);//function call for the validation 
 
             const{firstName,emailId,password}=req.body;//destructuring of the object
@@ -42,9 +41,7 @@ const register=async (req,res)=>{
                  error: err.message || "Unknown error occurred"
          });
         }
-
 }
-
 const login=async(req,res)=>{
 
         try{

@@ -1,20 +1,24 @@
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser')
+const cors=require('cors')
+
 const main=require('./src/config/db');
 const authRouter=require('./src/routes/userAuth');
+const cartRouter=require('./src/routes/cart-routes')
 const redisClient = require('./src/config/redis');
-const cors=require('cors')
 
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 
 app.get('/test', (req, res) => {
   res.send("Server is working!");
 });
 
-app.use('/user',authRouter);
+app.use('/api/user',authRouter);
+app.use('/api/cart',cartRouter)
 
 const initailizeConnection=async ()=>{
     try{
