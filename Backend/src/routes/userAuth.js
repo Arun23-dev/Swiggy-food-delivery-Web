@@ -8,7 +8,6 @@ const userMiddleware=require('../middleware/userMiddleware');
 authRouter.post('/register',register)
 authRouter.post('/login',login)
 authRouter.post('/logout',userMiddleware,logout);
-// authRouter.post('/getprofile',getprofile);
 
 module.exports=authRouter;
 
