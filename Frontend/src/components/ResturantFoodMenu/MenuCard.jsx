@@ -1,43 +1,54 @@
-export default function MenuCard({ menuCard }) {
-  return (
-    <div className="h-[174px]  w-full  mb-10 pb-10 justify-center ">
-      <div className="flex  justify-between pb-10 ">
-        <div className="w-7/10">
-          <div className="text-[18px] font-semibold text-[#02060ceb]">
-            {menuCard?.name}
-          </div>
-          <div className="text-[16px] font-normal text-[#02060ceb]">
-            <span>&#8377;</span>
-            {Math.floor(menuCard?.price / 100)}
-          </div>
+import React, { useState } from "react";
+import MenuDetails from "./MenuDetails";
 
-          {menuCard?.ratings?.aggregatedRating?.rating && (
-            <div>
-              <span>{menuCard.ratings.aggregatedRating.rating}</span>
-              <span>{`(${menuCard.ratings.aggregatedRating.ratingCountV2})`}</span>
-            </div>
-          )}
+function MenuCard({ data, dropState }) {
+  const [dropDown, setDropdown] = useState(dropState ?? true);
 
-          <div>{menuCard?.description}</div>
+  function toggle() {
+    setDropdown((prev) => !prev);
+  }
+
+  if (data?.itemCards) {
+    const { title, itemCards } = data;
+    return (
+      <>
+        <div key={title} >
+          <div className="flex justify-between my-3 mx-5 ">
+            <h1 className={`font-bold ${dropState ? "text-xl" : "text-base"}`}>
+              {title}({itemCards.length})
+            </h1>
+            <i
+              className={` text-3xl text-black fi fi-rr-angle-small-${dropDown ? "up" : "down"} `}
+              onClick={toggle}></i>
+          </div>
+          {dropDown && itemCards.map((data) => <MenuDetails Details={data} />)}
+      
         </div>
-
-        <div className="relative  w-[20%] h-[154px]">
-          <img
-            src={`https://media-assets.swiggy.com/swiggy/image/upload/${menuCard?.imageId}`}
-            alt=""
-            className="object-cover h-[144px] max-w-[156px] w-[156px] rounded-xl"
+            <div
+            style={{ height: dropState ? "16px" : "4px" }}
+            className="my-1.5 bg-[rgb(245,245,246)]"
           />
+      </>
+    );
+  }
+  if (data.categories) {
+    return (
+      <div>
+        <h1 className="font-bold text-xl">
+          {data.title}({data.categories.length})
+        </h1>
 
-          <button
-            className="w-[120px] h-[38px] text-center
-            border-gray-400  border-2 rounded-xl cursor-pointer  bg-white px-4 py-2
-            shadow-lg 
-             text-[#1BA672] font-semibold text-[18px] absolute  z-20 left-5 bottom-0"
-          >
-            ADD
-          </button>
-        </div>
+        {data.categories.map((category) => (
+          <div>
+            <h1>{/* {category.title}({category.itemCards.length}) */}</h1>
+
+            <MenuCard data={category} dropState={false} />
+          </div>
+        ))}
       </div>
-    </div>
-  );
+    );
+  }
+  return null;
 }
+
+export default MenuCard;
