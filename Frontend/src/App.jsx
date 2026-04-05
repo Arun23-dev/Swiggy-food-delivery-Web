@@ -2,15 +2,23 @@ import { Routes, Route } from "react-router";
 import Home from "./pages/Home";
 import Resturants from "./pages/Resturants";
 import ResturantMenu from "./pages/ResturantMenu";
+import DineHeader from "./components/Header/DineHeader";
 import Search from "./components/ResturantFoodMenu/Search";
 function App() {
   return (
     <>
       <Routes>
         <Route index element={<Home></Home>} />
-        <Route path="/resturants" element={<Resturants></Resturants>} />
-        <Route path="/city/delhi/:restaurantId" element={<ResturantMenu></ResturantMenu>}></Route>
-        <Route path="/city/delhi/:restaurantId/search" element={<Search></Search>}></Route>
+
+        <Route element={<DineHeader></DineHeader>}>
+          <Route path="/resturants" element={<Resturants></Resturants>} />
+          <Route
+            path="/city/delhi/:restaurantId"
+            element={<ResturantMenu></ResturantMenu>}></Route>
+          <Route
+            path="/city/delhi/:restaurantId/search"
+            element={<Search></Search>}></Route>
+        </Route>
       </Routes>
     </>
   );

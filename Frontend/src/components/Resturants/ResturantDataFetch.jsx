@@ -8,7 +8,7 @@ import ExploreResturant from "./ExploreResturant";
 import TopFoodShimmer from "../Shimmer/TopFoodShimmer";
 
 
-export default function ResturantDataFetch() {
+export default function         ResturantDataFetch() {
 
 
   const [Data, setData] = useState({});
@@ -42,9 +42,15 @@ export default function ResturantDataFetch() {
   useEffect(() => {
     async function fetchInitialData() {
       try {
-        const response = await fetch(import.meta.env.VITE_RESTURANT_URL);
-        const data = await response.json();
+        // const response = await fetch(import.meta.env.VITE_RESTURANT_URL);
+        // const data = await response.json();
+         const proxyServer = "https://cors-anywhere.herokuapp.com/"
+        const swiggyAPI = "https://www.swiggy.com/dapi/restaurants/list/v5?lat=28.7040592&lng=77.10249019999999&is-seo-homepage-enabled=true";
+        const response = await fetch(proxyServer+swiggyAPI);
+        const data=await response.json();
         setData(data);
+
+        
 
         const initialRestaurants = extractRestaurantsFromCards(data?.data?.cards);
         setResturantAllFood(initialRestaurants);
@@ -97,14 +103,11 @@ export default function ResturantDataFetch() {
 
 
   if(offset==0)
-  {
-    //shimmer effect lets do it
-
+{
     return (
 
        <div> 
     <TopFoodShimmer></TopFoodShimmer>
-    <h1>{console.log("hello")}</h1>
     </div>
 
     )

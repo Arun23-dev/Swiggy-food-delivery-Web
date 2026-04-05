@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import MenuDetails from "./MenuDetails";
+import MenuDetails from '../ResturantFoodMenu/MenuDetails'
 
 function MenuCard({ data, dropState }) {
   const [dropDown, setDropdown] = useState(dropState ?? true);
@@ -21,13 +21,13 @@ function MenuCard({ data, dropState }) {
               className={` text-3xl text-black fi fi-rr-angle-small-${dropDown ? "up" : "down"} `}
               onClick={toggle}></i>
           </div>
-          {dropDown && itemCards.map((data) => <MenuDetails Details={data} />)}
-      
+          {dropDown && itemCards.map((data) => <MenuDetails Details={data} key={data.card.info.name} />)}
+
         </div>
-            <div
-            style={{ height: dropState ? "16px" : "4px" }}
-            className="my-1.5 bg-[rgb(245,245,246)]"
-          />
+        <div
+          style={{ height: dropState ? "16px" : "4px" }}
+          className="my-1.5 bg-[rgb(245,245,246)]"
+        />
       </>
     );
   }

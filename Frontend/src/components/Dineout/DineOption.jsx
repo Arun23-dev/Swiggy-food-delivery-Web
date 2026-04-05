@@ -4,9 +4,7 @@ import DineCard from "./DineCard";
 
 export default function DineOption() {
 
-  
-  // console.log(DineData);
-  const scrollRef = useRef();
+    const scrollRef = useRef();
   const [buttonLeft, setButtonLeft] = useState(false);
   const [buttonRight, setButtonRight] = useState(true);
 

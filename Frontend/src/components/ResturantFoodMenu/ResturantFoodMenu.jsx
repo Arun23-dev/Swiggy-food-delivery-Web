@@ -29,7 +29,7 @@ function ResturantFoodMenu() {
     <div className=" mt-[100px] flex justify-center max-w-[60%] mx-auto container">
       <div>
         {menuData.map(({ card: { card } }, index) => (
-          <MenuCard data={card} dropState={true} />
+          <MenuCard data={card} dropState={true}  key={index}/>
         ))}
       </div>
     </div>
