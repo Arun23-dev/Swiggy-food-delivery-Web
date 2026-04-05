@@ -31,11 +31,10 @@ function MenuDetails({ Details }) {
   const [showMore, setShowMore] = useState(false);
 
   const items = useSelector((state) => state.cart.items)
-  console.log(Details.card.info.id)
   
   const element=items.find((data)=>data.id===Details.card.info.id)
 
-  // console.log(element);
+ 
   
 
    const count=element?element.quantity:0;
@@ -52,7 +51,7 @@ function MenuDetails({ Details }) {
   }
   function handleDecreaseItem() {
 
-    dispatch(decreaseItem(Details.card.info.id))
+    dispatch(decreaseItem(Details.card.info))
   }
 
   return (
