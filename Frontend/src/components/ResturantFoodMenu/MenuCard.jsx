@@ -40,7 +40,7 @@ function MenuCard({ data, dropState }) {
 
         {data.categories.map((category) => (
           <div>
-            <h1>{/* {category.title}({category.itemCards.length}) */}</h1>
+            {/* <h1>{category.title}({category.itemCards.length})</h1> */}
 
             <MenuCard data={category} dropState={false} />
           </div>

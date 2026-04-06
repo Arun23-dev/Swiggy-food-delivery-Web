@@ -1,14 +1,16 @@
 import { useSelector } from "react-redux";
-import { Outlet } from "react-router";
+import { Link, Outlet ,useParams} from "react-router";
 
 export default function DineHeader() {
+
+  const {restaurantId}=useParams();
 
   const count = useSelector((state) => state.cart.count);
   
   
   return (
     <div>
-      <div className="px-5  fixed top-0 w-full h-[80px]  z-50 bg-white shadow-sm">
+      <div className="px-5  fixed top-0 w-full h-[80px]  mb-[100px]   z-50 bg-white shadow-sm">
         <div className="flex justify-between max-w-[1200px] h-[80px] mx-auto container   items-center">
           {/* this is for logo and location */}
           <div className="flex justify-center gap-3">
@@ -86,7 +88,8 @@ export default function DineHeader() {
               <div>Swiggy Corporate</div>
             </div>
 
-            <div className="flex items-center gap-2 ">
+           <Link to={`/city/delhi/${restaurantId}/search` }>
+            <div className="flex items-center gap-2 mt-3">
               <span>
                 <svg
                   // class="ppAwf"
@@ -99,6 +102,9 @@ export default function DineHeader() {
               </span>
               <div>Search</div>
             </div>
+            </Link>
+
+
             <div className="flex items-center gap-2">
               <span>
                 <svg
