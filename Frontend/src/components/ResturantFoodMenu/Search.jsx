@@ -68,9 +68,14 @@ export default function Search() {
       const words = name.toLowerCase().split(" ");
 
       return words.some((word) => {
-        const shorter = queried.length < word.length ? queried : word
-        const longer = queried.length < word.length ? word : queried
-        return longer.startsWith(shorter)
+
+        if (queried.length >= 2 && word.length >= 2) {
+          return word.startsWith(queried.slice(0, 2));  // first 2 must match
+        }
+
+        // const shorter = queried.length < word.length ? queried : word
+        // const longer = queried.length < word.length ? word : queried
+        // return longer.startsWith(shorter)
 
       })
     });

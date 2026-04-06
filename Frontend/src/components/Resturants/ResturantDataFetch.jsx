@@ -32,6 +32,9 @@ export function ResturantDataFetch() {
   const CuisineData          = data?.data?.cards?.[7]?.card?.card
   const ExploreResturantData = data?.data?.cards?.[8]?.card?.card
 
+
+  // {console.log(foodData)}
+
   // ✅ derive restaurants directly — no useState needed
   const ResturantAllFood = (() => {
     const cards = data?.data?.cards ?? []

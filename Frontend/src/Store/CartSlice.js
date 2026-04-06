@@ -1,8 +1,10 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice,createAsyncThunk, isRejectedWithValue } from '@reduxjs/toolkit'
+
+
 
 
 const cartSlicer = createSlice({
-    name: 'cart',
+    name: 'cartSlice',
     initialState: {
         items: [],
         count: 0

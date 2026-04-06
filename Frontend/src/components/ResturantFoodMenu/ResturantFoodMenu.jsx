@@ -2,37 +2,39 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
 import { useParams } from "react-router";
 import MenuCard from "./MenuCard";
+import ShimmerMenuPage from "../Shimmer/ShimmerMenuPage";
+import { fetchFoodMenu } from "../../Store/FoodMenuSlice";
+import { useDispatch, useSelector } from "react-redux";
+
 function ResturantFoodMenu() {
   const { restaurantId } = useParams();
 
-  const [menuData, setMenuData] = useState([]);
-  const [currIndex, setCurrIndex] = useState(null);
+  const dispatch = useDispatch();
+  const { cache, loading, error } = useSelector((state) => state.foodMenu)
+
+
   useEffect(() => {
-    async function fetchData() {
-      const proxyServer = "https://cors-anywhere.herokuapp.com/";
-      const swiggyAPI = `https://www.swiggy.com/mapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${restaurantId}&catalog_qa=undefined&submitAction=ENTER`;
-
-      const response = await fetch(proxyServer + swiggyAPI);
-      const data = await response.json();
-
-      const cards =
-        data?.data?.cards.at(-1)?.groupedCard?.cardGroupMap?.REGULAR?.cards ||
-        [];
-      const filteredData = cards.filter((data) => {
-        return data.card?.card?.itemCards || data.card?.card?.categories;
-      });
-      setMenuData(filteredData);
+    if (!cache[restaurantId]) {
+      dispatch(fetchFoodMenu(restaurantId))
     }
-    fetchData();
-  }, [restaurantId]);
+
+  }, [restaurantId])
+
+
+  const data=cache[restaurantId]
+  const cards =
+    data?.data?.cards.at(-1)?.groupedCard?.cardGroupMap?.REGULAR?.cards ||[];
+    
+  const menuData = cards.filter((data) => {
+    return data.card?.card?.itemCards || data.card?.card?.categories;
+  });
+  if (loading || !cache[restaurantId]) return <div><ShimmerMenuPage/></div>
+  // if (error) return <p>{error.message}</p>
 
   return (
     <div className="flex justify-center  mt-[100px]  max-w-[60%] mx-auto container">
 
       <div>
-
-
-
         {/* Search Menu */}
         <div className="flex flex-col items-center gap-6 py-8 px-4">
 
