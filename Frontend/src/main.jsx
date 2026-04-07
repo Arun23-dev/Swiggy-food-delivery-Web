@@ -5,12 +5,16 @@ import { Provider } from "react-redux";
 import "./index.css";
 import App from "./App.jsx";
 import store from "../src/Store/Store.js"
+import { TooltipProvider } from '@/components/ui/tooltip'
 createRoot(document.getElementById("root")).render(
   <StrictMode>
+
     <Provider store={store}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <TooltipProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </TooltipProvider>
     </Provider>
-  </StrictMode>,
+  // </StrictMode>,
 );

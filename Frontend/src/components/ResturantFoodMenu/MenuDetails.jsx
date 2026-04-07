@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addItem, increseItem, decreaseItem } from "../../Store/CartSlice";
+import { addItem, increseItem, decreaseItem } from "../../features/CartSlice";
 
 function MenuDetails({ Details }) {
 

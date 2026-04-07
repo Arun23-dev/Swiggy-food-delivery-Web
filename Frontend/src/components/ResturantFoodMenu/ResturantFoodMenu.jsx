@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useParams } from "react-router";
 import MenuCard from "./MenuCard";
 import ShimmerMenuPage from "../Shimmer/ShimmerMenuPage";
-import { fetchFoodMenu } from "../../Store/FoodMenuSlice";
+import { fetchFoodMenu } from "../../features/FoodMenuSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 function ResturantFoodMenu() {
@@ -24,7 +24,7 @@ function ResturantFoodMenu() {
   const data=cache[restaurantId]
   const cards =
     data?.data?.cards.at(-1)?.groupedCard?.cardGroupMap?.REGULAR?.cards ||[];
-    
+
   const menuData = cards.filter((data) => {
     return data.card?.card?.itemCards || data.card?.card?.categories;
   });

@@ -1,13 +1,13 @@
 import { useSelector } from "react-redux";
-import { Link, Outlet ,useParams} from "react-router";
+import { Link, useParams } from "react-router";
 
-export default function DineHeader() {
+export default function CommonHeader() {
 
-  const {restaurantId}=useParams();
+  const { restaurantId } = useParams();
 
   const count = useSelector((state) => state.cart.count);
-  
-  
+
+
   return (
     <div>
       <div className="px-5  fixed top-0 w-full h-[80px]  mb-[100px]   z-50 bg-white shadow-sm">
@@ -88,7 +88,7 @@ export default function DineHeader() {
               <div>Swiggy Corporate</div>
             </div>
 
-           <Link to={`/city/delhi/${restaurantId}/search` }>
+            {/* <Link to={`/city/delhi/${restaurantId}/search` }>
             <div className="flex items-center gap-2 mt-3">
               <span>
                 <svg
@@ -102,7 +102,7 @@ export default function DineHeader() {
               </span>
               <div>Search</div>
             </div>
-            </Link>
+            </Link> */}
 
 
             <div className="flex items-center gap-2">
@@ -148,27 +148,49 @@ export default function DineHeader() {
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer transition">
 
                 {/* Icon + Count */}
-                <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl shadow-md hover:scale-105 hover:shadow-lg transition-all cursor-pointer">
 
-                  {/* Count */}
-                  {count > 0 && (
-                    <span className="text-lg font-bold bg-white text-green-600 px-2 py-0.5 rounded-md">
-                      {count}
-                    </span>
-                  )}
-                  {/* Cart Text */}
-                  <div className="text-base font-semibold tracking-wide">
-                    Cart
+
+                <Link
+                  to="/checkout"
+                  className="flex items-center gap-3 bg-orange-500 hover:bg-orange-600 active:scale-95 
+             text-white px-5 py-2.5 rounded-2xl transition-all font-bold shadow-md hover:shadow-lg"
+                >
+                  {/* Cart Icon Wrapper */}
+                  <div className="relative w-8 h-8 flex items-center justify-center">
+                    {/* Replace this with your icon */}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-7 h-7"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M7 13l-1.5-6M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
+                    </svg>
+
+                    {/* Count Badge */}
+                    {count > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-white text-orange-600 
+                       text-[11px] font-extrabold px-1.5 py-[2px] rounded-full 
+                       leading-none shadow">
+                        {count}
+                      </span>
+                    )}
                   </div>
 
-                </div>
+                  {/* Divider */}
+                  <div className="w-px h-5 bg-white/40" />
+
+                  {/* Label */}
+                  <span className="text-base font-extrabold">Cart</span>
+                </Link>
 
               </div>
             </div>
           </div>
         </div>
       </div>
-      <Outlet></Outlet>
     </div>
   );
 }
