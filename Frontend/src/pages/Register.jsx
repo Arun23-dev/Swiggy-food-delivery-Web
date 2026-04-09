@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Link, useNavigate } from 'react-router';
+import { clearRedirectURL } from '@/features/RedirectSlice';
+import { useDispatch ,useSelector} from 'react-redux';
+import { Link, useNavigate, useLocation } from 'react-router';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +14,11 @@ const Register = () => {
   const [passwordError, setPasswordError] = useState('');
   const { register, loading, error } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+
+
+  const redirectURL=useSelector((state)=>state.redirect.redirectURL)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,20 +29,36 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
       setPasswordError('Passwords do not match');
       return;
     }
-    
+
     try {
-      await register({
+      const result = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
       });
-      navigate('/dashboard'); // Redirect after successful registration
+
+      if (result) {
+
+        console.log(result)
+        if (result) {
+          const url = redirectURL || '/'
+          console.log(url);
+          navigate(url);
+          dispatch(clearRedirectURL());
+        }
+      }
+      else {
+
+        navigate()
+
+
+      }
     } catch (err) {
       // Error is handled by auth slice
     }

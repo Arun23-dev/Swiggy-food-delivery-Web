@@ -11,7 +11,7 @@ export const registerUser = createAsyncThunk(
       console.log("data of user recienve in thunk",userData)
       const response = await axiosClient.post('/api/user/register', userData);
 
-      console.log("Date pushed on the backend successfully ",response);
+      console.log("Date pushed on the backend successfully ",response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue({ message: error.message });
@@ -24,9 +24,9 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
 
-      console.log(userData);
+      console.log("userData",userData);
       const response = await axiosClient.post('/api/user/login', userData);
-      console.log(response);
+      console.log("Response Data",response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue({ message: error.message });
@@ -94,6 +94,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
+        console.log("Action of the login",action.payload)
         state.user = action.payload.user;
         state.isAuthenticated = true;
       })

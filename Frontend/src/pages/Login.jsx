@@ -1,22 +1,46 @@
+// pages/Login.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useLocation } from 'react-router';
+import { useDispatch ,useSelector} from 'react-redux';
+import {clearRedirectURL} from '@/features/RedirectSlice';
+
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [emailId, setEmailId] = useState(''); // Changed from 'email' to 'emailId'
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { login, loading, error } = useAuth();
+  
+  const { login, loading, error } = useAuth(); // Uncommented this
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch=useDispatch();
+
+
+  const redirectURL=useSelector((state)=>state.redirect.redirectURL)
+
+  // Get the redirect path from location state or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-       login({ email, password });
-      navigate('/dashboard');
+     const result= await login({ emailId, password }); // Changed from 'email' to 'emailId'
+      // navigate(from, { replace: true }); 
+      //  Redirect to intended page
+
+      console.log(result)
+      if(result){
+      const url=redirectURL || '/'
+      console.log(url);
+      navigate(url);
+      dispatch(clearRedirectURL());
+      }
+
     } catch (err) {
-      // Error handled by auth slice
+      // Error is already handled by useAuth toast
+      console.error('Login error:', err);
     }
   };
 
@@ -47,7 +71,7 @@ const Login = () => {
           <div className="space-y-4">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="emailId" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
               </label>
               <div className="relative">
@@ -58,13 +82,13 @@ const Login = () => {
                   </svg>
                 </div>
                 <input
-                  id="email"
-                  name="email"
+                  id="emailId"
+                  name="emailId"
                   type="email"
                   autoComplete="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={emailId}
+                  onChange={(e) => setEmailId(e.target.value)}
                   className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                   placeholder="you@example.com"
                 />
@@ -133,7 +157,7 @@ const Login = () => {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
+                <a href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
                   Forgot password?
                 </a>
               </div>
@@ -172,7 +196,7 @@ const Login = () => {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">
-                    {error.message || 'Login failed. Please try again.'}
+                    {typeof error === 'string' ? error : error.message || 'Login failed. Please try again.'}
                   </h3>
                 </div>
               </div>

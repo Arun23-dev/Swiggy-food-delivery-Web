@@ -2,7 +2,7 @@ import { Link } from "react-router";
 
 export default function RestuarnatAllFood({ CategoryWise, ResturantAllFood }) {
   return (
-    <div className=" w-[80%] justify-center mx-auto container">
+    <div className="max-w-[80%] min-w-[80%] justify-center mx-auto container">
       <div className="text-2xl font-bold"> <h2>Resturant with online food delivery </h2></div>
 
       <div className="flex gap-3  rounded-2xl shadow-orange-100 border-amber-50 justify-center">

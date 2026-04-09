@@ -1,5 +1,19 @@
 import { Link } from "react-router";
+import { useAuth } from "@/hooks/useAuth";
 function Header() {
+
+
+  const customButton=( <div
+        className="bg-black w-[135px] h-[54px] flex items-center justify-center rounded-[16px]" >
+      Sign in
+   </div>)
+
+  const  { AuthUI, isAuthenticated, user } = useAuth(customButton);
+
+
+
+
+
   return (
     <header className="bg-[#ff5200] font-serif">
       
@@ -41,11 +55,9 @@ function Header() {
       </svg>
     </a>
 
-  
-    <a  href="#"
-        className="bg-black w-[135px] h-[54px] flex items-center justify-center rounded-[16px]" >
-      Sign in
-    </a>
+  {/* call the function here man  */}
+  <AuthUI/>
+   
   </div>
 </div>
 
