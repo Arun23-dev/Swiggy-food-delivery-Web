@@ -7,13 +7,13 @@ const main=require('./src/config/db');
 const redisClient = require('./src/config/redis');
 
 
-const authRouter=require('./src/routes/userAuth');
+const userRouter=require('./src/routes/user-routes');
 const cartRouter=require('./src/routes/cart-routes')
 
 const app = express();
 
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Your frontend URL
+    origin:  'http://localhost:5173', // Your frontend URL
     credentials: true, // Important: Allow cookies to be sent
     optionsSuccessStatus: 200,
     // allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
@@ -22,17 +22,19 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
+app.use(cookieParser());
 
 app.get('/test', (req, res) => {
   res.send("Server is working!");
 });
 
-app.use('/api/user',authRouter);
+app.use('/api/user',userRouter);
 app.use('/api/cart',cartRouter)
 
 const initailizeConnection=async ()=>{
     try{
-        await  Promise.all([main(),  redisClient.connect()]);
+        
+        await  Promise.all([main(),await redisClient.connect() ]);
         console.log("DB Connected");
 
          app.listen(process.env.PORT, () => {

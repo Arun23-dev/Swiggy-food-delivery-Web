@@ -3,6 +3,8 @@ const User=require('../models/user')
 const  jwt = require('jsonwebtoken');
 const adminMiddleware= async (req,res,next)=>{
     try{
+
+        
             const {token}=req.cookies;
             if(!token){
                 throw new Error("token absent");
