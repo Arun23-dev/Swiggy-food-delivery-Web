@@ -3,8 +3,8 @@ import { createSlice,createAsyncThunk, isRejectedWithValue } from '@reduxjs/tool
 
 
 
-const cartSlicer = createSlice({
-    name: 'cartSlice',
+const  cartSlicer = createSlice({
+    name: 'cart',
     initialState: {
         items: [],
         count: 0

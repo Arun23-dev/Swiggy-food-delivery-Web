@@ -1,16 +1,20 @@
-import { useSelector } from "react-redux";
-import { Link, useParams } from "react-router";
+import { useSelector, useDispatch } from "react-redux"; // Added useDispatch
+import { Link, useParams, useNavigate, useLocation } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
+import { setRedirectURL } from "@/features/RedirectSlice"; // Fixed: removed extra quote
 
 export default function CommonHeader() {
 
   const { restaurantId } = useParams();
+  const dispatch = useDispatch(); // Added missing dispatch
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const customButton = (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 mt-2">
       <span>
         <svg
-          className="ppAwf"  // Fixed: changed 'class' to 'className'
+          className="ppAwf"
           viewBox="6 0 12 24"
           height="19"
           width="18"
@@ -24,6 +28,11 @@ export default function CommonHeader() {
 
   const { AuthUI, isAuthenticated, user } = useAuth(customButton);
   const count = useSelector((state) => state.cart.count);
+
+  function handleClick() {
+    dispatch(setRedirectURL('/checkout'));
+    navigate('/checkout');
+  }
 
   return (
     <div>
@@ -49,7 +58,7 @@ export default function CommonHeader() {
                 </defs>
               </svg>
             </div>
-            
+
             {/* location */}
             <div className="flex items-center ml-[30px] space-x-2">
               <div className="flex flex-col items-start">
@@ -98,7 +107,7 @@ export default function CommonHeader() {
             <div className="flex items-center gap-2">
               <span>
                 <svg
-                  className="ppAwf"  // Fixed: changed 'class' to 'className'
+                  className="ppAwf"
                   viewBox="0 0 32 32"
                   height="19"
                   width="19"
@@ -112,7 +121,7 @@ export default function CommonHeader() {
             <div className="flex items-center gap-2">
               <span>
                 <svg
-                  className="ppAwf"  // Fixed: changed 'class' to 'className'
+                  className="ppAwf"
                   viewBox="6 -1 12 25"
                   height="19"
                   width="19"
@@ -124,41 +133,40 @@ export default function CommonHeader() {
             </div>
 
             {/* Cart Section - Fixed */}
-            <div className="flex items-center gap-2">
-              <Link
-                to="/checkout"
-                className="flex items-center gap-3 bg-orange-500 hover:bg-orange-600 active:scale-95 
-                  text-white px-5 py-2.5 rounded-2xl transition-all font-bold shadow-md hover:shadow-lg"
-              >
-                {/* Cart Icon Wrapper */}
-                <div className="relative w-8 h-8 flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-7 h-7"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M7 13l-1.5-6M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
-                  </svg>
+            <div 
+              className="flex items-center gap-3 bg-orange-500 hover:bg-orange-600 active:scale-95 
+                         text-white px-5 py-2.5 rounded-2xl transition-all font-bold shadow-md 
+                         hover:shadow-lg cursor-pointer"
+              onClick={handleClick}
+            >
+              {/* Cart Icon Wrapper */}
+              <div className="relative w-8 h-8 flex items-center justify-center" >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-7 h-7"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M7 13l-1.5-6M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
+                </svg>
 
-                  {/* Count Badge */}
-                  {count > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-white text-orange-600 
+                {/* Count Badge */}
+                {count > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-white text-orange-600 
                       text-[11px] font-extrabold px-1.5 py-[2px] rounded-full 
                       leading-none shadow">
-                      {count}
-                    </span>
-                  )}
-                </div>
+                    {count}
+                  </span>
+                )}
+              </div>
 
-                {/* Divider */}
-                <div className="w-px h-5 bg-white/40" />
+              {/* Divider */}
+              <div className="w-px h-5 bg-white/40" />
 
-                {/* Label */}
-                <span className="text-base font-extrabold">Cart</span>
-              </Link>
+              {/* Label */}
+              <span className="text-base font-extrabold">Cart</span>
             </div>
 
             {/* Auth UI */}

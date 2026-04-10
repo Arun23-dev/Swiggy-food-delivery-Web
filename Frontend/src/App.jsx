@@ -1,9 +1,6 @@
 import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router';
 
-
-
-
 // Routes
 import ProtectedRoutes from './routes/ProtectedRoutes';
 import PublicRoutes from './routes/PublicRoutes';
@@ -26,8 +23,29 @@ import CheckoutPage from './pages/CheckoutPage';
 import Order from './pages/Order';
 import Cart from './pages/Cart'
 ;
+import { useDispatch, useSelector } from 'react-redux';
+import { checkAuth } from './features/UserSlice';
+import {fetchResturant} from './features/ResturantSlice';
 
 function App() {
+
+
+
+  const {user}=useSelector((state)=>state.user);
+  const {data}=useSelector((state)=>state.resturant);
+  const dispatch=useDispatch();
+
+
+  // first always to checkauth and also fetch the resturant data here so that better user expericen
+  useEffect(()=>{
+     console.log("🔄 useEffect ran! Current user:", user);
+    dispatch(checkAuth());
+
+    if(!data){
+    dispatch(fetchResturant())
+    }
+
+  },[])
 
 
   return (

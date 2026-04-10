@@ -1,7 +1,7 @@
 // hooks/useAuth.js
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { loginUser, registerUser, logoutUser, checkAuth } from '../features/authSlice';
+import { loginUser, registerUser, logoutUser, checkAuth } from '../features/UserSlice';
 import { setRedirectURL } from '../features/RedirectSlice';
 import { useLocation, useNavigate } from 'react-router'; // Fixed import
 import { toast } from 'react-hot-toast';
@@ -12,7 +12,7 @@ export function useAuth(customButton = null) {
   const dispatch = useDispatch();
   const dropdownRef = useRef(null);
 
-  const { user, isAuthenticated, loading, error } = useSelector((state) => state.auth);
+  const { user, isAuthenticated, loading, error } = useSelector((state) => state.user);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -70,8 +70,10 @@ export function useAuth(customButton = null) {
     }
   };
 
+
+  
+
   const handleAuthClick = () => {
-    console.log(location.pathname);
     dispatch(setRedirectURL(location.pathname));
     navigate('/register');
   };
