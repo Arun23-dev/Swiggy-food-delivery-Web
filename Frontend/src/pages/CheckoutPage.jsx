@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
 import { Minus, Plus, Lock, Check, ChevronRight, Home, CreditCard, Wallet, Building, Truck, Clock, Shield } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
-import { increseItem, decreaseItem } from "@/features/CartSlice";
+import  useAuth from "../hooks/useAuth";
+import { increaseItem, decreaseItem } from "@/features/CartSlice";
 import { setAddress } from "@/features/UserSlice";
+import { setRedirectURL } from "@/features/RedirectSlice";
+import toast, { Toaster } from 'react-hot-toast';
+import {addItemToBackend} from '@/features/CartSlice'
 
 const DELIVERY_FEE = 67;
 const SWIGGY_BASE_URL = "https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,h_600/";
@@ -16,6 +19,7 @@ export default function CheckoutPage() {
   const { isAuthenticated, user } = useSelector((state) => state.user);
   const { items,count } = useSelector((state) => state.cart);
   const cart = items;
+ 
 
   const [activeStep, setActiveStep] = useState(1);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -24,10 +28,7 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
 
-// console.log("User here ",user?.address);
 
-
-  // Local addresses state
   const addresses=user?.address
    
 
@@ -38,11 +39,27 @@ export default function CheckoutPage() {
     pincode: ""
   });
 
-  const itemTotal = cart.reduce((sum, item) => sum + ((item.defaultPrice || item.price || 0) / 100) * item.quantity, 0);
+  const itemTotal = cart?.reduce((sum, item) => sum + ((item.defaultPrice || item.price ||0) / 100) * item.quantity, 0);
   const total = Math.round(itemTotal + DELIVERY_FEE);
 
-  const handleIncrement = (item) => {
-    dispatch(increseItem(item));
+  const handleIncrement = async (item) => {
+    dispatch(increaseItem(item));
+    toast.success('Added to cart', { duration: 1000 });
+    if (isAuthenticated && user?._id) {
+            try {
+                await dispatch(addItemToBackend({
+                    userId: user?._id,
+                    product: item
+                })).unwrap();
+                console.log('Backend sync successful');
+            } 
+        
+            catch (error) {
+                // Backend failed but UI and localStorage have the data
+                console.error('Backend sync failed:', error);
+                toast.error('Saved locally, will sync later');
+            }
+        }
   };
 
   const handleDecrement = (item) => {
@@ -56,6 +73,7 @@ export default function CheckoutPage() {
   }, [isAuthenticated, activeStep]);
 
   const handleLoginClick = () => {
+    dispatch(setRedirectURL(location.pathname))
     navigate('/login', { state: { from: location.pathname } });
   };
 
@@ -158,6 +176,9 @@ const handlePlaceOrder = async () => {
     return;
   }
 
+
+   navigate('/checkout/payment', { state: { fromCheckout: true } });
+
   // All validations passed - simulate order placement
   setIsProcessing(true);
   console.log("✅ All validations passed!");
@@ -169,6 +190,8 @@ const handlePlaceOrder = async () => {
     total: total,
     orderTime: new Date().toISOString()
   });
+
+
 
   try {
     // SIMULATE API CALL (2 second delay)
@@ -238,7 +261,7 @@ const handlePlaceOrder = async () => {
             </div>
             <span className="text-sm">Account</span>
           </div>
-          <ChevronRight size={16} className="text-gray-400" />
+         <ChevronRight size={16} className="text-gray-400" />
           <div className={`flex items-center gap-2 ${activeStep >= 2 ? 'text-orange-600' : 'text-gray-400'}`}>
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${activeStep >= 2 ? 'bg-orange-600 text-white' : 'bg-gray-200'}`}>
               2
@@ -252,6 +275,8 @@ const handlePlaceOrder = async () => {
             </div>
             <span className="text-sm">Payment</span>
           </div>
+          
+         
         </div>
 
         <button className="text-sm font-semibold text-gray-600 hover:text-gray-900">Help</button>
@@ -301,7 +326,9 @@ const handlePlaceOrder = async () => {
           </div>
 
           {/* Step 2: Address */}
-          <div className={`bg-white rounded-2xl p-4 shadow-sm transition-all ${activeStep === 2 ? 'ring-2 ring-orange-500' : ''}`}>
+          {
+            isAuthenticated?(<>
+             <div className={`bg-white rounded-2xl p-4 shadow-sm transition-all ${activeStep === 2 ? 'ring-2 ring-orange-500' : ''}`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${activeStep === 2 ? 'bg-orange-600 text-white' : 'bg-gray-200'}`}>
@@ -453,9 +480,7 @@ const handlePlaceOrder = async () => {
               ))}
             </div>
           </div>
-
-          {/* Navigation Buttons */}
-          <div className="flex gap-2">
+              <div className="flex gap-2">
             {activeStep > 1 && (
               <button
                 onClick={handlePrevStep}
@@ -487,13 +512,19 @@ const handlePlaceOrder = async () => {
               
             )}
           </div>
+            </>):null
+          }
+         
+
+          {/* Navigation Buttons */}
+      
         </section>
 
         {/* RIGHT COLUMN - Order Summary */}
         <aside className="md:col-span-3 space-y-4 sticky top-20 h-fit">
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <h2 className="font-bold text-xl mb-5">Your Order</h2>
-            {cart.length === 0 ? (
+            {cart?.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">
                   <svg className="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,11 +540,11 @@ const handlePlaceOrder = async () => {
                 </button>
               </div>
             ) : (
-              cart.map((item) => (
+              cart?.map((item) => (
                 <div key={item.id} className="mb-5 pb-4 border-b border-gray-100 last:border-0">
                   <div className="flex gap-4 mb-3">
                     <img
-                      src={`${SWIGGY_BASE_URL}/${item.imageId}`}
+                      src={`${SWIGGY_BASE_URL}/${item.image}`}
                       alt={item.name}
                       className="w-24 h-24 object-cover rounded-xl"
                       onError={(e) => {
@@ -552,7 +583,7 @@ const handlePlaceOrder = async () => {
             )}
           </div>
 
-          {cart.length > 0 && (
+          {cart?.length > 0 && (
             <>
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="font-bold text-lg mb-4">Bill Details</h2>

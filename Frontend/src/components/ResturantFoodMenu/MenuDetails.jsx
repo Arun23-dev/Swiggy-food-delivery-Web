@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addItem, increseItem, decreaseItem } from "../../features/CartSlice";
+import { addItem, increaseItem, decreaseItem } from "../../features/CartSlice";
 
 function MenuDetails({ Details }) {
+
+  const dispatch = useDispatch();
 
   const {
     card: {
@@ -26,19 +28,13 @@ function MenuDetails({ Details }) {
   const finalPrice = (defaultPrice || price) / 100;
   const isLongDesc = description && description.length > 100;
 
-  const dispatch = useDispatch();
+
 
   const [showMore, setShowMore] = useState(false);
 
-  const items = useSelector((state) => state.cart.items)
-  
-  const element=items.find((data)=>data.id===Details.card.info.id)
-
- 
-  
-
-   const count=element?element.quantity:0;
-
+  const items = useSelector((state) => state.cart?.items)
+  const element = items?.find((data) => data.id === Details.card.info.id)
+  const count = element ? element.quantity : 0;
 
   function handleAddItem() {
 
@@ -47,7 +43,7 @@ function MenuDetails({ Details }) {
   }
   function handleIncreaseItem() {
 
-    dispatch(increseItem(Details.card.info))
+    dispatch(increaseItem(Details.card.info))
   }
   function handleDecreaseItem() {
 
@@ -190,9 +186,6 @@ function MenuDetails({ Details }) {
 
             </div>))
           }
-
-
-
 
           {/* Customisable */}
           <span className="text-[11px] text-gray-400 font-medium -mt-1">

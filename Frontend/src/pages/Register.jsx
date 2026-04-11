@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import useAuth  from '../hooks/useAuth';
 import { clearRedirectURL } from '@/features/RedirectSlice';
 import { useDispatch ,useSelector} from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router';

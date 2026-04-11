@@ -12,7 +12,7 @@ export const fetchFoodMenu = createAsyncThunk(
 
 
             const response = await fetch(proxyServer + swiggyAPI);
-
+             
             if (!response.ok) {
                 throw new Error("Failed to fetch menu");
             }

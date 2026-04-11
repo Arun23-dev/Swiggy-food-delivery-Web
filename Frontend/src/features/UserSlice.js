@@ -8,10 +8,8 @@ export const registerUser = createAsyncThunk(
   'user/register',
   async (userData, { rejectWithValue }) => {
     try {
-      // console.log("data of user recienve in thunk",userData)
-      const response = await axiosClient.post('/api/user/register', userData);
 
-      // console.log("Date pushed on the backend successfully ",response.data);
+      const response = await axiosClient.post('/api/user/register', userData);
       return response.data;
     } catch (error) {
       return rejectWithValue({ message: error.message });
@@ -24,11 +22,10 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
 
-      // console.log("userData",userData);
       const response = await axiosClient.post('/api/user/login', userData);
-      // console.log("Response Data",response.data);
       return response.data;
-    } catch (error) {
+    } 
+    catch (error) {
       return rejectWithValue({ message: error.message });
     }
   }
@@ -40,40 +37,45 @@ export const logoutUser = createAsyncThunk(
     try {
       const response = await axiosClient.post('/api/user/logout');
       return response.data;
-    } catch (error) {
+    } 
+    catch (error) {
       return rejectWithValue({ message: error.message });
     }
   }
 );
 
+
 export const checkAuth = createAsyncThunk(
   'user/checkAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosClient.get('/api/user/me');
-      console.log("Response from the backend", response);
 
-      // Check if response is successful
+      const response = await axiosClient.get('/api/user/me',
+        {
+          params: {
+            '_cb': Math.random().toString(36).substring(7),
+            '_t': Date.now(),
+          }
+        }
+
+      );
       if (response.data && response.data.success === false) {
         return rejectWithValue(response.data.message);
       }
 
       return response.data;
-    } catch (error) {
-      // console.error("CheckAuth error:", error);
+    } 
+    catch (error) {
 
-      // Handle different error types
       if (error.response?.data) {
-        // If backend sent JSON error
+
         return rejectWithValue(error.response.data.message || error.response.data);
       } else if (error.message) {
-        // If it's a network error or plain text
+
         return rejectWithValue(error.message);
       }
-
       return rejectWithValue("Authentication failed");
     }
-
   }
 );
 
@@ -82,13 +84,8 @@ export const setAddress = createAsyncThunk(
   async (address, { rejectWithValue }) => {
     try {
 
-      // console.log("Address Recived in thunk", address);
-
       const response = await axiosClient.patch('api/user/address', address);
-
-      // console.log(response);
       return response.data;
-
     }
     catch (error) {
       return rejectWithValue({ message: error.message });
@@ -101,7 +98,7 @@ const userSlice = createSlice({
   initialState: {
     user: null,
     isAuthenticated: false,
-    loading: false,
+    loading: true,
     error: null,
   },
   reducers: {},
@@ -130,18 +127,19 @@ const userSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        // console.log("Action of the login",action.payload)
         state.user = action.payload.user;
         state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.user = null;
       })
 
       // logout
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
@@ -151,6 +149,7 @@ const userSlice = createSlice({
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.user = null;
       })
 
       // checkAuth
@@ -160,9 +159,6 @@ const userSlice = createSlice({
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.loading = false;
-        // console.log("Action", action);
-        // console.log("Payload: ", action.payload)
-        // console.log("User Details", action.payload.user);
         state.user = action.payload.user;
         state.isAuthenticated = true;
       })
@@ -170,6 +166,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.isAuthenticated = false;
+        state.user = null;
       })
 
 

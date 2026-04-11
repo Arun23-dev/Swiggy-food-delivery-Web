@@ -1,7 +1,8 @@
 import { useSelector, useDispatch } from "react-redux"; // Added useDispatch
-import { Link, useParams, useNavigate, useLocation } from "react-router";
-import { useAuth } from "@/hooks/useAuth";
+import {  useParams, useNavigate, useLocation } from "react-router";
+import  useAuth  from "../../hooks/useAuth";
 import { setRedirectURL } from "@/features/RedirectSlice"; // Fixed: removed extra quote
+// import { syncCartAfterLogin } from "@/features/cart/cartSlice";
 
 export default function CommonHeader() {
 
@@ -30,7 +31,7 @@ export default function CommonHeader() {
   const count = useSelector((state) => state.cart.count);
 
   function handleClick() {
-    dispatch(setRedirectURL('/checkout'));
+    dispatch(setRedirectURL(location.pathname));
     navigate('/checkout');
   }
 

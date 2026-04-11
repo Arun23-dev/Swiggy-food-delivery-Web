@@ -70,3 +70,10 @@ queries.forEach(q => {
     const results = search(q).map(i => i.card.info.name)
     console.log(`"${q}" =>`, results.length ? results : 'no results')
 })
+
+const obj={
+    id:1,
+    name:"Arun",
+    lastName:'chaudhary'
+};
+const new obj=
