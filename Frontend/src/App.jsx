@@ -40,8 +40,11 @@ function App() {
 
 
   useEffect(() => {
+ 
 
+    console.log(isAuthenticated);
     if (!isAuthenticated) {
+      
       dispatch(checkAuth());
 
     }

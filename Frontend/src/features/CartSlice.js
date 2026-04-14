@@ -1,7 +1,7 @@
 // features/cart/cartSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosClient from "../Utils/axiosClient";
-
+import {createOrder} from '@/features/OrderSlice'
 
 // Load cart from localStorage
 const loadCartFromLocalStorage = () => {
@@ -32,6 +32,18 @@ const saveCartToLocalStorage = (cart) => {
         console.error('Error saving cart to localStorage:', error);
     }
 };
+const deleteCartItemInLocalStorage = (itemId) => {
+    try {
+        const existingCart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        // filter out the item you want to remove
+        const updatedCart = existingCart.filter(item => item.itemId !== itemId);
+        
+        localStorage.setItem('cart', JSON.stringify(updatedCart));
+    } catch (error) {
+        console.log("Error while deleting cart item in localStorage: ", error);
+    }
+}
 
 // Generate guest ID for non-logged in users
 const generateGuestId = () => {
@@ -256,7 +268,20 @@ const cartSlice = createSlice({
             .addCase(clearBackendCart.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
-            });
+            })
+
+
+            //for the success of the cart
+            .addCase(createOrder.fulfilled, (state, action) => {
+            console.log(action.payload);
+            if (action.payload.success) {
+            deleteCartItemInLocalStorage('cart');
+            state.items = [];   
+            state.count = 0;      
+            state.total = 0;   
+            state.synced=false;   
+         }
+         })
     }
 });
 
