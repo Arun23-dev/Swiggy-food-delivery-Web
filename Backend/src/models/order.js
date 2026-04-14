@@ -1,53 +1,110 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const orderSchema = new mongoose.Schema({
 
-    cart: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    resturant: {
-        resturantId: String,
-        resturantName: String,
+
+const orderSchema = new Schema({
+    user: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
     },
     items: [
         {
-            itemId: String,
-            name: String,
-            price: Number,
-            quantity: Number
+            itemId: {
+                type: String,
+                required: true,
+            },
+            name: {
+                type: String,
+                required: true,
+            },
+            price: {
+                type: Number,
+                required: true,
+                min: true,
+
+            },
+            quantity: {
+                type: Number,
+                required: true,
+                min: 1,
+                default: 1
+            },
+            image: {
+                type: String,
+                required: true,
+            }
+
+
         }
     ],
     deliveryAddress: {
-        street: String,
-        city: String,
-        pincode: String,
+        addressId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User.address'
+        },
+        label: {
+            type: String,
+            required: true,
+        },
+        street: {
+            type: String,
+            required: true,
+
+        },
+        city: {
+            type: String,
+            required: true
+        },
+        pincode: {
+            type: String,
+            required: true
+        },
+
     },
     totalAmount: {
         type: Number,
         required: true,
+        min: 0
     },
     status: {
         type: String,
-        enum: ['placed', 'confirmed', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'],
+        enum: [
+            'placed',
+            'confirmed',
+            'preparing',
+            'out-for-delivery',
+            'delivered',
+            'cancelled'
+        ],
         default: 'placed'
     },
-    payment: {
-        method: {
-            type: String,
-            enum: ['esewa', 'cod'],
-            defalut: 'cod'
-        },
-        status: {
-            type: String,
-            enum: ['pending', 'paid', 'failed', 'refunded',],
-            default: 'pending',
-        },
-        esewaPaymentId: String,
-        esewaOrderId: String
-    }
-},
+    estimatedDeliveryTime: {
+        type: Date
+    },
+    cancellationReason: {
+        type: String,
+        default: null
+    },
+    deliveredAt: {
+        type: Date,
+        default: null
+    },
 
+},
     {
         timestamps: true
+    });
+
+orderSchema.pre('save', function (next) {
+    if (this.isModified('status') && this.status === 'delivered') {
+        this.deliveredAt = new Date();
     }
-)
-const Order = mongoose.model("Order", orderSchema);
-module.exports=Order;
+    // Clear cancellationReason if order is not cancelled
+    if (this.isModified('status') && this.status !== 'cancelled') {
+        this.cancellationReason = null;
+    }
+    next();
+});
+
+const Order = mongoose.model('Order', orderSchema);
+module.exports = Order;

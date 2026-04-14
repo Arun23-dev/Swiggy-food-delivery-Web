@@ -13,9 +13,8 @@ const register = async (req, res) => {
         const firstName = req.body.name.trim().split(" ")[0];
         const emailId = req.body.email;
         const password = req.body.password;
-        // 4
+        // 
         // need ot make the better optimization 
-
 
         const saltRounds = 5;
 
@@ -38,7 +37,12 @@ const register = async (req, res) => {
             { expiresIn: 60 * 60 }
         );
 
-        res.cookie('token', token, { maxAge: 60 * 60 * 1000 });
+        res.cookie('token', token, {
+            maxAge: 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: false,
+        });
 
         return res.status(201).json({
             success: true,
@@ -64,7 +68,9 @@ const login = async (req, res) => {
     try {
 
 
+        console.log("API hitted here on the login")
         const { emailId, password } = req.body;
+
 
         if (!emailId || !password) {
             throw new Error("Invalid credentials");
@@ -77,6 +83,7 @@ const login = async (req, res) => {
         }
 
         const match = await bcrypt.compare(password, user.password);
+
         if (!match) {
             throw new Error("Invalid credentials");
         }
@@ -87,7 +94,12 @@ const login = async (req, res) => {
             { expiresIn: 60 * 60 }
         );
 
-        res.cookie('token', token, { maxAge: 60 * 60 * 1000 });
+        res.cookie('token', token, {
+            maxAge: 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: false,
+        });
 
         res.status(200).json({
             success: true,
@@ -98,7 +110,7 @@ const login = async (req, res) => {
                 role: user.role,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                address:user.address,
+                address: user.address,
             },
         });
 
@@ -123,8 +135,11 @@ const logout = async (req, res) => {
         await redisClient.set(`token:${token}`, 'Blocked');
         await redisClient.expireAt(`token:${token}`, payload.exp);
 
-        res.cookie("token", null, { expires: new Date(Date.now()) });
-
+        res.clearCookie("token", {
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: false,
+        });
         res.status(200).json({ message: "Logged out successfully" });
 
     } catch (err) {
@@ -136,11 +151,11 @@ const logout = async (req, res) => {
 }
 
 const checkAuth = async (req, res) => {
-  try {
-    
+    try {
+
+        console.log("API hitted here man CheckAuth ");
         const user = req.result;
-        
-  
+
         res.status(200).json({
             success: true,
             isAuthenticated: true,
@@ -180,14 +195,14 @@ const addAddress = async (req, res) => {
                 message: 'All fields are required'
             });
         }
-        
+
         if (!/^\d{6}$/.test(pincode)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid pincode'
             });
         }
-        
+
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
@@ -195,7 +210,7 @@ const addAddress = async (req, res) => {
                 message: 'User not found'
             });
         }
-        
+
         // Create new address (MongoDB will auto-add _id)
         const newAddress = {
             label,
@@ -204,19 +219,19 @@ const addAddress = async (req, res) => {
             pincode,
             isDefault: user.address.length === 0
         };
-        
+
         user.address.push(newAddress);
         await user.save();
-        
+
         // Get the added address with its auto-generated _id
         const addedAddress = user.address[user.address.length - 1];
-        
+
         res.status(201).json({
             success: true,
             message: 'Address added successfully',
             data: addedAddress  // This includes the _id
         });
-        
+
     } catch (error) {
         res.status(500).json({
             success: false,
