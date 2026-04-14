@@ -9,6 +9,7 @@ const redisClient = require('./src/config/redis');
 
 const userRouter=require('./src/routes/user-routes');
 const cartRouter=require('./src/routes/cart-routes')
+const orderRouter=require('./src/routes/order-routes')
 
 const app = express();
 
@@ -29,7 +30,8 @@ app.get('/test', (req, res) => {
 });
 
 app.use('/api/user',userRouter);
-app.use('/api/cart',cartRouter)
+app.use('/api/cart',cartRouter);
+app.use('/api/order',orderRouter);
 
 const initailizeConnection=async ()=>{
     try{
