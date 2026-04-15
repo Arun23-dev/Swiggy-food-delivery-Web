@@ -1,4 +1,4 @@
-const Order=require('../models/order');
+const Order = require('../models/order');
 const Cart = require('../models/cart');
 const User = require('../models/user');
 
@@ -7,28 +7,32 @@ const User = require('../models/user');
 // POST /api/orders/create
 const createOrder = async (req, res) => {
     try {
-        const userId = req.user._id;                      // from auth middleware
-        const { deliveryAddressId, items, totalAmount } = req.body;
+        const userId = req.result._id;
+        const { deliveryAddress, items, totalAmount } = req.body; // totalAmount is in rupees
 
-        // ── Validate user exists ──
+       
+        // console.log("Items:", items);
+        // console.log("Delivery Address:", deliveryAddress);
+        //  console.log("Total Amount (Rupees):", totalAmount);
+
+        // Check user
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // ── Validate items ──
+        // Check cart items
         if (!items || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Cart is empty' });
         }
 
-        // ── Find and snapshot the selected address ──
-        const address = user.address.id(deliveryAddressId);
+        // Find address
+        const address = user.address.find(add => add._id.toString() === deliveryAddress._id);
         if (!address) {
             return res.status(404).json({ success: false, message: 'Delivery address not found' });
         }
 
-        // ── Snapshot address at order time (so future edits don't affect this order) ──
-        const deliveryAddress = {
+        const deliveryAddressDetails = {
             addressId: address._id,
             label: address.label,
             street: address.street,
@@ -36,30 +40,102 @@ const createOrder = async (req, res) => {
             pincode: address.pincode,
         };
 
-        // ── Create order ──
-        const order = new Order({
+        const formattedItems = items.map(item => ({
+            itemId: item.itemId || item.id || item._id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+        }));
+        // console.log(formattedItems);
+
+        const itemTotalInPaisa = formattedItems.reduce((sum, item) => {
+            return sum + (item.price * item.quantity);
+        }, 0);
+
+        // console.log(itemTotalInPaisa)
+
+        // Calculate delivery fee in PAISA
+        const DELIVERY_CHARGE_PAISA = 6700; // 67 rupees
+        const FREE_DELIVERY_THRESHOLD_PAISA = 100000; // 1000 rupees
+        const deliveryFeeInPaisa = itemTotalInPaisa > FREE_DELIVERY_THRESHOLD_PAISA ? 0 : DELIVERY_CHARGE_PAISA;
+
+        // Calculate total in PAISA
+        const calculatedTotalInPaisa = itemTotalInPaisa + deliveryFeeInPaisa;
+        const calculatedTotalInRupees = Math.floor(calculatedTotalInPaisa / 100);
+
+        // console.log(calculatedTotalInRupees);
+
+        if (totalAmount !== calculatedTotalInRupees) {
+            return res.status(400).json({
+                success: false,
+                message: 'Total amount mismatch',
+                details: {
+                    itemTotal: `₹${((itemTotalInPaisa || 0) / 100).toFixed(2)}`,
+                    deliveryFee: `₹${((deliveryFeeInPaisa || 0) / 100).toFixed(2)}`,
+                    expectedTotal: `₹${(calculatedTotalInRupees || 0).toFixed(2)}`,
+                    receivedTotal: `₹${(totalAmount || 0).toFixed(2)}`
+                }
+            });
+        }
+
+        console.log("✅ Validation passed!");
+   
+        const order = await Order.create({
             user: userId,
-            items,
-            deliveryAddress,
-            totalAmount,
+            items: formattedItems,
+            deliveryAddress: deliveryAddressDetails,
             status: 'placed',
+            totalAmount: calculatedTotalInPaisa,
+            itemTotal: itemTotalInPaisa,
+            deliveryFee: deliveryFeeInPaisa
         });
 
-        await order.save();
+        console.log("Order created successfully:", order._id);
 
+        await Cart.findOneAndUpdate(
+            { user: userId },
+            { $set: { items: [] } }
+        );
+
+        // Safely convert values for response
+        const safeToRupees = (value) => {
+            return value ? value / 100 : 0;
+        };
+
+        // Send response (convert back to rupees for frontend)
         res.status(201).json({
             success: true,
             message: 'Order placed successfully',
-            order,
+            order: {
+                _id: order._id,
+                user: order.user,
+                items: order.items,
+                deliveryAddress: order.deliveryAddress,
+                status: order.status,
+                totalAmount: safeToRupees(order.totalAmount),
+                itemTotal: safeToRupees(order.itemTotal),
+                deliveryFee: safeToRupees(order.deliveryFee),
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt
+            },
+            summary: {
+                itemTotal: `₹${((itemTotalInPaisa || 0) / 100).toFixed(2)}`,
+                deliveryFee: `₹${((deliveryFeeInPaisa || 0) / 100).toFixed(2)}`,
+                totalAmount: `₹${((calculatedTotalInPaisa || 0) / 100).toFixed(2)}`,
+                freeDelivery: deliveryFeeInPaisa === 0
+            }
         });
 
     } catch (error) {
-        console.error('createOrder error:', error);
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        console.error("Order creation error:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
     }
 };
-
-
 // ─────────────────────────────────────────────
 // 2. CANCEL ORDER
 // PATCH /api/orders/:orderId/cancel

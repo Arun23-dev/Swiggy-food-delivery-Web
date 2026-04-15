@@ -5,7 +5,8 @@ const { Schema } = mongoose;
 const orderSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required:true,
     },
     items: [
         {
@@ -20,7 +21,7 @@ const orderSchema = new Schema({
             price: {
                 type: Number,
                 required: true,
-                min: true,
+                min:0,
 
             },
             quantity: {
@@ -66,6 +67,22 @@ const orderSchema = new Schema({
         required: true,
         min: 0
     },
+    itemTotal: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    deliveryFee: {
+        type: Number,
+        required: true,
+        default: 0,
+        min: 0
+    },
+    payment: {
+        type: Schema.Types.ObjectId,
+        ref: 'Payment',
+        default: null,
+    },
     status: {
         type: String,
         enum: [
@@ -102,6 +119,12 @@ orderSchema.pre('save', function (next) {
     // Clear cancellationReason if order is not cancelled
     if (this.isModified('status') && this.status !== 'cancelled') {
         this.cancellationReason = null;
+    }
+    next();
+});
+orderSchema.pre('validate', function(next) {
+    if (this.totalAmount !== this.itemTotal + this.deliveryFee) {
+        next(new Error('Total amount must equal item total plus delivery fee'));
     }
     next();
 });

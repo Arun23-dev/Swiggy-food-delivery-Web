@@ -3,7 +3,7 @@ const Cart = require('../models/cart');
 // POST /api/cart/add
 async function addToCart(req, res) {
     try {
-        console.log("API hitted  in the add to cart here man ");
+   
         const { user, restaurant, items, totalAmount } = req.body;
 
         const [item] = items;
@@ -34,7 +34,8 @@ async function addToCart(req, res) {
         }
     }
     catch (error) {
-        // console.log(error);
+       
+    
     }
 };
 
@@ -119,18 +120,14 @@ const clearCart = async (req, res) => {
 };
 const syncCart = async (req, res) => {
     try {
-        console.log("API hit here in the sync cart man");
+       
         const { userId, localCart } = req.body;
-
-        // console.log("userId", userId);
-        // console.log("localCart", localCart);
-
-        // Find or create cart
 
         if (Object.keys(localCart).length===0) {
 
             let dbCart = await Cart.findOne({ user: userId });
-            // console.log("DBCart here ",dbCart);
+            
+
             return res.json({
                 success: true,
                 message: 'Data send fro the cart of the user',
@@ -182,10 +179,9 @@ const syncCart = async (req, res) => {
             });
         }
 
-        // ✅ If cart exists in DB but is EMPTY
+        //  If cart exists in DB but is EMPTY
         if (userCart.items.length === 0 && localCart.items.length > 0) {
-            console.log("Cart exists but empty, adding guest items");
-
+        
             // Add all guest items
             userCart.items = localCart.items.map(item => ({
                 itemId: item.id,
@@ -201,7 +197,7 @@ const syncCart = async (req, res) => {
 
             await userCart.save();
 
-            // ✅ Return fresh data
+            //  Return fresh data
             const freshCart = await Cart.findOne({ user: userId }).lean();
 
             return res.json({
@@ -215,7 +211,7 @@ const syncCart = async (req, res) => {
             });
         }
 
-        // ✅ MERGE LOGIC using HashMap
+        //  MERGE LOGIC using HashMap
         const itemLookup = {};
 
         // Index existing items
@@ -249,27 +245,30 @@ const syncCart = async (req, res) => {
             }
         }
 
-        // ✅ Only save if there are changes
+        //  Only save if there are changes
         if (hasChanges) {
             // Recalculate totals
             userCart.count = userCart.items.reduce((sum, item) => sum + item.quantity, 0);
             userCart.totalAmount = userCart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
             await userCart.save();
+
             console.log('Cart merged and saved successfully');
-        } else {
+        }
+         else {
+
             console.log('No changes detected, skipping save');
         }
 
-        // ✅ ALWAYS return FRESH data from database (avoid cache)
+        //  ALWAYS return FRESH data from database (avoid cache)
         const freshCart = await Cart.findOne({ user: userId }).lean();
 
-        console.log('Cart merged successfully:', {
-            userId,
-            totalItems: freshCart.items.length,
-            totalQuantity: freshCart.count,
-            totalAmount: freshCart.totalAmount
-        });
+        // console.log('Cart merged successfully:', {
+        //     userId,
+        //     totalItems: freshCart.items.length,
+        //     totalQuantity: freshCart.count,
+        //     totalAmount: freshCart.totalAmount
+        // });
 
         res.json({
             success: true,
@@ -282,7 +281,7 @@ const syncCart = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error syncing cart:', error);
+
         res.status(500).json({
             success: false,
             message: 'Failed to sync cart',
