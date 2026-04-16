@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import axiosClient from "@/Utils/axiosClient";
 
 
 export const fetchResturant = createAsyncThunk(
@@ -7,19 +8,13 @@ export const fetchResturant = createAsyncThunk(
 
         try {
 
-            
-
-            const proxyServer = "https://cors-anywhere.herokuapp.com/"
-            const swiggyAPI = "https://www.swiggy.com/dapi/restaurants/list/v5?lat=28.7040592&lng=77.10249019999999&is-seo-homepage-enabled=true";
-            const response = await fetch(proxyServer + swiggyAPI);
-            return await response.json();
+           const response= await axiosClient.get('api/restaurants');
+            return response.data ;
         }
         catch (error) {
             return rejectWithValue({ message: "Error occurred" })
         }
     })
-
-// time to create the slice here man 
 
 export const resturantSlice = createSlice({
     name: 'resturant',
@@ -36,7 +31,7 @@ export const resturantSlice = createSlice({
             state.error=null;
         })
         .addCase(fetchResturant.fulfilled,(state,action)=>{
-          
+           
             state.data=action.payload;
             state.loading=false;
         })

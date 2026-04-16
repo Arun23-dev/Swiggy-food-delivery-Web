@@ -1,23 +1,20 @@
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-
+import axiosClient from '../Utils/axiosClient';
 
 export const fetchFoodMenu = createAsyncThunk(
     'foodMenu/fetchFoodMenu',
     async (restaurantId, { rejectWithValue }) => {
 
         try {
-            const proxyServer = "https://cors-anywhere.herokuapp.com/";
-            const swiggyAPI = `https://www.swiggy.com/mapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${restaurantId}&catalog_qa=undefined&submitAction=ENTER`;
-
-
-            const response = await fetch(proxyServer + swiggyAPI);
+            
+            const response=await axiosClient.get(`/api/restaurants/${restaurantId}`)
              
-            if (!response.ok) {
+            if (response.status !== 200) {
                 throw new Error("Failed to fetch menu");
             }
-            const data=await response.json();
-            return {restaurantId,data};
+
+            return {restaurantId,data:response.data};
  
         }
         catch (error) {
