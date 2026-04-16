@@ -77,3 +77,7 @@ const obj={
     lastName:'chaudhary'
 };
 const new obj=
+
+
+  const itemTotal = cart?.reduce((sum, item) => sum + (Math.floor(item.defaultPrice || item.price || 0) / 100)) * item.quantity, 0);
+  const total = Math.round(itemTotal + DELIVERY_FEE);

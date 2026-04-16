@@ -6,8 +6,9 @@ export const createOrder = createAsyncThunk(
     'order/createOrder',
     async (orderData, { rejectWithValue }) => {
         try {
-            const res = await axiosClient.post('/api/order/create', orderData);
-            return res.data;
+            const response = await axiosClient.post('/api/order/create', orderData);
+        
+            return response.data;
         } catch (err) {
             return rejectWithValue(err.response?.data?.message);
         }
@@ -61,8 +62,8 @@ const orderSlice = createSlice({
         })
         .addCase(createOrder.fulfilled, (state, action) => {
             state.loading = false;
-            console.log("Payload Here ",action.payload)
-            state.orders.push(action.payload);
+            // console.log("Payload Here in the Order Slice",action.payload)
+            state.orders.push(action.payload.data);
         
         })
         .addCase(createOrder.rejected, (state, action) => {

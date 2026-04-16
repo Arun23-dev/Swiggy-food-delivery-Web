@@ -1,6 +1,8 @@
 const Order = require('../models/order');
 const Cart = require('../models/cart');
 const User = require('../models/user');
+const Payment = require('../models/payment')
+const crypto = require('crypto');
 
 
 
@@ -8,12 +10,13 @@ const User = require('../models/user');
 const createOrder = async (req, res) => {
     try {
         const userId = req.result._id;
-        const { deliveryAddress, items, totalAmount } = req.body; // totalAmount is in rupees
+        const { deliveryAddress, items, totalAmount, PaymentMode } = req.body;
 
-       
-        // console.log("Items:", items);
-        // console.log("Delivery Address:", deliveryAddress);
-        //  console.log("Total Amount (Rupees):", totalAmount);
+
+        console.log("Items:", items);
+        console.log("Delivery Address:", deliveryAddress);
+        console.log("Total Amount (Rupees):", totalAmount);
+        console.log("Payment Mode", PaymentMode)
 
         // Check user
         const user = await User.findById(userId);
@@ -43,67 +46,79 @@ const createOrder = async (req, res) => {
         const formattedItems = items.map(item => ({
             itemId: item.itemId || item.id || item._id,
             name: item.name,
-            price: item.price,
+            price: Math.floor(item.price / 100),
             quantity: item.quantity,
             image: item.image
         }));
         // console.log(formattedItems);
 
-        const itemTotalInPaisa = formattedItems.reduce((sum, item) => {
+        const calculatedItemAmount = formattedItems.reduce((sum, item) => {
             return sum + (item.price * item.quantity);
         }, 0);
 
-        // console.log(itemTotalInPaisa)
+        // console.log(calculatedItemAmount)
 
-        // Calculate delivery fee in PAISA
-        const DELIVERY_CHARGE_PAISA = 6700; // 67 rupees
-        const FREE_DELIVERY_THRESHOLD_PAISA = 100000; // 1000 rupees
-        const deliveryFeeInPaisa = itemTotalInPaisa > FREE_DELIVERY_THRESHOLD_PAISA ? 0 : DELIVERY_CHARGE_PAISA;
 
-        // Calculate total in PAISA
-        const calculatedTotalInPaisa = itemTotalInPaisa + deliveryFeeInPaisa;
-        const calculatedTotalInRupees = Math.floor(calculatedTotalInPaisa / 100);
+        const DELIVERY_CHARGE = 67;
+        const FREE_DELIVERY_THRESHOLD = 1000;
+        const deliveryFee = calculatedItemAmount > FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
 
-        // console.log(calculatedTotalInRupees);
+        const calculatedTotalAmount = deliveryFee + calculatedItemAmount;
 
-        if (totalAmount !== calculatedTotalInRupees) {
+        // console.log(calculatedTotalAmount);
+
+        if (totalAmount !== calculatedTotalAmount) {
             return res.status(400).json({
                 success: false,
                 message: 'Total amount mismatch',
                 details: {
-                    itemTotal: `₹${((itemTotalInPaisa || 0) / 100).toFixed(2)}`,
-                    deliveryFee: `₹${((deliveryFeeInPaisa || 0) / 100).toFixed(2)}`,
-                    expectedTotal: `₹${(calculatedTotalInRupees || 0).toFixed(2)}`,
-                    receivedTotal: `₹${(totalAmount || 0).toFixed(2)}`
+                    itemTotal: `₹${calculatedItemAmount}`,
+                    deliveryFee: `₹${deliveryFee}`,
+                    expectedTotal: `₹${calculatedTotalAmount}`,
+                    receivedTotal: `₹${totalAmount}`
                 }
             });
         }
 
         console.log("✅ Validation passed!");
-   
+
         const order = await Order.create({
             user: userId,
             items: formattedItems,
             deliveryAddress: deliveryAddressDetails,
             status: 'placed',
-            totalAmount: calculatedTotalInPaisa,
-            itemTotal: itemTotalInPaisa,
-            deliveryFee: deliveryFeeInPaisa
-        });
+            totalAmount: calculatedTotalAmount,
+            itemTotal: calculatedItemAmount,
+            deliveryFee: deliveryFee,
 
+
+        });
         console.log("Order created successfully:", order._id);
 
         await Cart.findOneAndUpdate(
             { user: userId },
             { $set: { items: [] } }
         );
+        let transactionId = null;
+        if (PaymentMode === 'esewa') {
+            transactionId = crypto.randomUUID();
 
-        // Safely convert values for response
-        const safeToRupees = (value) => {
-            return value ? value / 100 : 0;
-        };
+            const payment = new Payment({
+                user: userId,
+                order: order._id,
+                amount: calculatedTotalAmount,
+                method: PaymentMode,
+                status: 'pending',
+                transactionId: transactionId,
+                gatewayData: {},
 
-        // Send response (convert back to rupees for frontend)
+            })
+            await payment.save();
+
+            order.payment = payment._id;
+            await order.save();
+
+        }
         res.status(201).json({
             success: true,
             message: 'Order placed successfully',
@@ -113,18 +128,19 @@ const createOrder = async (req, res) => {
                 items: order.items,
                 deliveryAddress: order.deliveryAddress,
                 status: order.status,
-                totalAmount: safeToRupees(order.totalAmount),
-                itemTotal: safeToRupees(order.itemTotal),
-                deliveryFee: safeToRupees(order.deliveryFee),
+                totalAmount: order.totalAmount,
+                itemTotal: order.itemTotal,
+                deliveryFee: order.deliveryFee,
                 createdAt: order.createdAt,
                 updatedAt: order.updatedAt
             },
             summary: {
-                itemTotal: `₹${((itemTotalInPaisa || 0) / 100).toFixed(2)}`,
-                deliveryFee: `₹${((deliveryFeeInPaisa || 0) / 100).toFixed(2)}`,
-                totalAmount: `₹${((calculatedTotalInPaisa || 0) / 100).toFixed(2)}`,
-                freeDelivery: deliveryFeeInPaisa === 0
-            }
+                itemTotal: `₹${calculatedItemAmount}`,
+                deliveryFee: `₹${DELIVERY_CHARGE}`,
+                totalAmount: `₹${calculatedTotalAmount}`,
+                freeDelivery: deliveryFee === 0
+            },
+            ...(PaymentMode === 'esewa' && { transactionId })
         });
 
     } catch (error) {
@@ -333,6 +349,27 @@ const reorder = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+const getOrderByTransactionId = async (req, res) => {
+
+   
+    const { transactionId } = req.params;
+
+    try {
+        // Find payment by transactionId and populate the order
+        const payment = await Payment.findOne({ transactionId: transactionId }).populate('order');
+
+        if (!payment) {
+            return res.status(404).json({ error: 'Payment not found for this transaction' });
+        }
+
+        // Return the order (you can also include payment info if needed)
+        res.json(payment.order);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+
+
+}
 
 
 module.exports = {
@@ -342,4 +379,5 @@ module.exports = {
     getMyOrders,
     updateOrderStatus,
     reorder,
+    getOrderByTransactionId
 };

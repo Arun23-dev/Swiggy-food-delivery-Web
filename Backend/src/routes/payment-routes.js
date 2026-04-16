@@ -4,8 +4,8 @@ const userMiddleware=require('../middleware/userMiddleware')
 
 const { esewaInitiate,esewaVerify } = require('../controllers/payment-controller');
 
-paymentRouter.post('/esewa/initiate', esewaInitiate);
-paymentRouter.get('/esewa/verify', userMiddleware,esewaVerify);
+paymentRouter.post('/esewa/initiate',userMiddleware, esewaInitiate);
+paymentRouter.get('/esewa/verify',esewaVerify);
 
 module.exports = paymentRouter;
 

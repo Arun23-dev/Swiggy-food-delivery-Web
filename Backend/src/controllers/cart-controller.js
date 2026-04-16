@@ -247,7 +247,7 @@ const syncCart = async (req, res) => {
 
         //  Only save if there are changes
         if (hasChanges) {
-            // Recalculate totals
+            
             userCart.count = userCart.items.reduce((sum, item) => sum + item.quantity, 0);
             userCart.totalAmount = userCart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -256,19 +256,11 @@ const syncCart = async (req, res) => {
             console.log('Cart merged and saved successfully');
         }
          else {
-
             console.log('No changes detected, skipping save');
         }
 
         //  ALWAYS return FRESH data from database (avoid cache)
         const freshCart = await Cart.findOne({ user: userId }).lean();
-
-        // console.log('Cart merged successfully:', {
-        //     userId,
-        //     totalItems: freshCart.items.length,
-        //     totalQuantity: freshCart.count,
-        //     totalAmount: freshCart.totalAmount
-        // });
 
         res.json({
             success: true,

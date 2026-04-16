@@ -11,6 +11,9 @@ import { addItemToBackend } from '@/features/CartSlice'
 import { createOrder } from "@/features/OrderSlice";
 
 
+import { initiateEsewaPayment } from "../lib/esewa";
+
+
 
 const DELIVERY_FEE = 67;
 const SWIGGY_BASE_URL = "https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,h_600/";
@@ -42,8 +45,13 @@ export default function CheckoutPage() {
     pincode: ""
   });
 
-  const itemTotal = cart?.reduce((sum, item) => sum + ((item.defaultPrice || item.price || 0) / 100) * item.quantity, 0);
-  const total = Math.round(itemTotal + DELIVERY_FEE);
+const itemTotal = cart?.reduce((sum, item) => {
+  // Store price in rupees (divide by 100) and floor it
+  const priceInRupees = Math.floor((item.defaultPrice || item.price || 0) / 100);
+  return sum + (priceInRupees * item.quantity);
+}, 0);
+const total = Math.floor(itemTotal + DELIVERY_FEE);
+
 
   const handleIncrement = async (item) => {
     dispatch(increaseItem(item));
@@ -54,7 +62,7 @@ export default function CheckoutPage() {
           userId: user?._id,
           product: item
         })).unwrap();
-        console.log('Backend sync successful');
+        // console.log('Backend sync successful');
       }
 
       catch (error) {
@@ -150,7 +158,6 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
 
 
-    console.log("here on the handle place order")
     //  VALIDATION 1: Check if cart has items
     if (count === 0) {
       toast.error('Your cart is empty! Please add items before placing order.');
@@ -178,28 +185,35 @@ export default function CheckoutPage() {
       console.log("Order failed: Invalid total amount", total);
       return;
     }
+
     const orderData = {
       deliveryAddress: selectedAddress,
       items: cart,
-      totalAmount: total
+      totalAmount: total,
+      PaymentMode:selectedPayment
 
     }
-    console.log(orderData);
+
     try {
-      const result = await dispatch(createOrder(orderData))
-      console.log(result);
-      if (result.payload?.success) {
-        navigate('/checkout/payment', { state: { fromCheckout: true } });
+      const response=await dispatch(createOrder(orderData))
+      
+      if(response?.payload?.success){
+       
+          initiateEsewaPayment({ 
+            orderId:response.payload.order._id,
+            amount: total,
+          transactionId:response.payload.transactionId 
+        })
+
       }
+          
+
     }
     catch (error) {
       console.log("Errro Occurred", error);
     }
 
   }
-
-
-
 
   if (orderPlaced) {
     return (

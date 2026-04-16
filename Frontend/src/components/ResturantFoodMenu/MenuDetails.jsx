@@ -17,9 +17,11 @@ function MenuDetails({ Details }) {
         description,
         isBestseller,
         itemAttribute: { vegClassifier },
-        ratings: {
-          aggregatedRating: { rating, ratingCountV2 },
-        },
+        ratings
+        // :{
+          // aggregatedRating
+          //  ,{ rating, ratingCountV2 }
+        // },
       },
     },
   } = Details;
@@ -92,12 +94,12 @@ function MenuDetails({ Details }) {
           <p className="font-bold text-xl text-gray-900">₹{finalPrice}</p>
 
           {/* Rating */}
-          {rating && Number(rating) > 0 && (
+          {ratings?.aggregatedRating?.rating && Number(ratings?.aggregatedRating?.rating) > 0 && (
             <div className="flex items-center gap-1 text-xl font-bold text-green-700">
-              ★ {rating}
-              {ratingCountV2 && (
+              ★ {ratings?.aggregatedRating?.rating}
+              {ratings?.aggregatedRating?.ratingCountV2 && (
                 <span className="text-gray-400 font-semibold">
-                  ({ratingCountV2})
+                  ({ratings?.aggregatedRating?.ratingCountV2})
                 </span>
               )}
             </div>

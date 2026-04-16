@@ -1,77 +1,41 @@
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
-import axios from "axios";
-import { base64Decode } from "../Utils/helper"
-const Failure = () => {
+// pages/Failure.jsx
+import React from 'react';
+import { useNavigate } from 'react-router';
+
+function Failure() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-
-  const token = queryParams.get("data");
-  const decoded = token ? base64Decode(token) : null;
-  const product_id =
-    decoded?.transaction_uuid ||
-    queryParams.get("purchase_order_id") ||
-    sessionStorage.getItem("current_transaction_id");
-
-  useEffect(() => {
-    if (product_id) {
-      markPaymentAsFailed(product_id);
-    }
-  }, [product_id]);
-
-  const markPaymentAsFailed = async (product_id) => {
-    try {
-      await axios.post("http://localhost:5000/api/payment-status", {
-        product_id,
-        status: "FAILED",
-      });
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-    }
-  };
 
   return (
-    <div className="failure-container">
-      <div className="status-icon error">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+        <div className="text-6xl mb-4">😞</div>
+        <h1 className="text-3xl font-bold text-red-600 mb-2">Payment Failed!</h1>
+        <p className="text-gray-600 mb-4">Your payment could not be processed</p>
+
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-red-700">
+            Possible reasons:
+            <br />• Insufficient balance
+            <br />• Transaction cancelled
+            <br />• Technical error
+          </p>
+        </div>
+
+        <button
+          onClick={() => navigate("/checkout")}
+          className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600"
         >
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="15" y1="9" x2="9" y2="15"></line>
-          <line x1="9" y1="9" x2="15" y2="15"></line>
-        </svg>
-      </div>
-      <h1>Payment Failed!</h1>
-      <p className="failure-message">
-        There was an issue processing your payment.
-      </p>
-
-      <div className="failure-details">
-        <p>
-          <strong>Transaction ID:</strong> {product_id || "Not available"}
-        </p>
-        <p>
-          If the amount was deducted from your account, it will be refunded
-          within 3-5 business days.
-        </p>
-      </div>
-
-      <div className="action-buttons">
-        <button onClick={() => navigate("/")} className="go-home-button">
-          Return to Home
+          Try Payment Again
+        </button>
+        <button
+          onClick={() => navigate("/")}
+          className="w-full mt-3 border border-gray-300 text-gray-600 py-3 rounded-lg font-semibold hover:bg-gray-50"
+        >
+          Back to Home
         </button>
       </div>
     </div>
   );
-};
+}
 
 export default Failure;

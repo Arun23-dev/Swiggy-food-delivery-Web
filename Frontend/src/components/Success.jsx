@@ -1,151 +1,117 @@
-import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
-import axios from "axios";
-import { base64Decode } from "../Utils/helper"
-const Success = () => {
-  const [paymentStatus, setPaymentStatus] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [verificationError, setVerificationError] = useState(false);
+// pages/Success.jsx
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router";
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
+
+export default function Success() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const queryParams = new URLSearchParams(location.search);
-
-  // For eSewa: Decode the data parameter
-  const token = queryParams.get("data");
-  const decoded = token ? base64Decode(token) : null;
-  const product_id =
-    decoded?.transaction_uuid || queryParams.get("purchase_order_id");
-
-  const isKhalti = queryParams.get("pidx") !== null;
-  const rawAmount =
-    decoded?.total_amount ||
-    queryParams.get("total_amount") ||
-    queryParams.get("amount");
-  const total_amount = isKhalti ? rawAmount / 100 : rawAmount;
+  const [status, setStatus] = useState("verifying");
+  const [orderDetails, setOrderDetails] = useState(null);
 
   useEffect(() => {
-    verifyPaymentAndUpdateStatus();
-  }, [product_id]);
-
-  const verifyPaymentAndUpdateStatus = async () => {
-    if (!product_id) {
-      setIsLoading(false);
-      setVerificationError(true);
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        "http://localhost:5000/api/payment-status",
-        {
-          product_id, // Send the product_id to find the transaction
-          pidx: queryParams.get("pidx"), // Send the pidx for Khalti verification
-        }
-      );
-
-      if (response.status === 200) {
-        setIsLoading(false);
-
-        if (response.data.status === "COMPLETED") {
-          setPaymentStatus("COMPLETED");
-        } else {
-          navigate("/payment-failure", {
-            search: `?purchase_order_id=${product_id}`,
-          });
+    const verifyPayment = async () => {
+      try {
+        const dataParam = searchParams.get("data");
+        if (!dataParam) {
+          navigate('/checkout/payment/esewa/failure');
           return;
         }
-      }
-    } catch (error) {
-      console.error("Error confirming payment:", error);
-      setIsLoading(false);
-      setVerificationError(true);
-      if (error.response && error.response.status === 400) {
-        navigate("/payment-failure", {
-          search: `?purchase_order_id=${product_id}`,
-        });
-      }
-    }
-  };
 
-  if (isLoading) return <div className="loading-container">Loading...</div>;
+        const decodedData = JSON.parse(atob(dataParam));
+        const { transaction_uuid, total_amount } = decodedData;
 
-  // System error state - when can't verify the payment status
-  if (verificationError) {
+        // Verify with backend
+        const response = await fetch(
+          `http://localhost:3000/api/payment/esewa/verify?transaction_uuid=${transaction_uuid}&total_amount=${total_amount}`
+        );
+        const result = await response.json();
+
+        if (result.status === "COMPLETE") {
+          // Fetch order details using transaction_uuid
+          const orderResponse = await fetch(
+            `http://localhost:3000/api/order/by-transaction/${transaction_uuid}`
+          );
+          const orderData = await orderResponse.json();
+          setOrderDetails(orderData);
+          setStatus("success");
+
+          // Optional: Save order data to global state/context here
+          // e.g., useOrderContext().setLastOrder(orderData)
+        } else {
+          setStatus("failed");
+        }
+      } catch (error) {
+        console.error("Verification error:", error);
+        setStatus("error");
+      }
+    };
+
+    verifyPayment();
+  }, [searchParams, navigate]);
+
+  // Verifying state
+  if (status === "verifying") {
     return (
-      <div className="error-container">
-        <h1>Oops! Error occurred on confirming payment</h1>
-        <h2>We will resolve it soon.</h2>
-        <p>
-          Your transaction is being processed, but we couldn't verify its
-          status.
-        </p>
-        <p>
-          If the amount was deducted from your account, please contact our
-          support team.
-        </p>
-        <p>
-          Reference ID: {product_id || queryParams.get("pidx") || "Unknown"}
-        </p>
-        <button onClick={() => navigate("/")} className="go-home-button">
-          Go to Homepage
-        </button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-semibold text-gray-700">Verifying Payment...</h2>
+        </div>
       </div>
     );
   }
 
-  // Success state - only shown for confirmed successful payments
+  // Success state
+  if (status === "success") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+          <CheckCircleIcon className="h-20 w-20 mx-auto text-green-500" />
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
+          <p className="text-gray-600 mb-6">Your order has been confirmed</p>
+
+          {orderDetails && (
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-gray-600">Order ID: <span className="font-semibold">{orderDetails._id}</span></p>
+              <p className="text-sm text-gray-600 mt-1">Amount Paid: <span className="font-semibold">₹{orderDetails.totalAmount}</span></p>
+              <p className="text-sm text-gray-600 mt-1">Transaction ID: <span className="font-semibold">{orderDetails.transactionId}</span></p>
+            </div>
+          )}
+
+          <button
+            onClick={() => navigate("/dashboard/order")}
+            className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600"
+          >
+            View My Orders
+          </button>
+          <button
+            onClick={() => navigate("/")}
+            className="w-full mt-3 border border-green-500 text-green-500 py-3 rounded-lg font-semibold hover:bg-green-50"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Failed state – redirect to failure page
+  if (status === "failed") {
+    navigate('/checkout/payment/esewa/failure');
+    return null;
+  }
+
+  // Error state
   return (
-    <div className="success-container">
-      <div className="status-icon success">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h1 className="text-3xl font-bold text-yellow-600 mb-2">Verification Error</h1>
+        <button onClick={() => navigate("/")} className="w-full bg-blue-500 text-white py-3 rounded-lg">
+          Go Home
+        </button>
       </div>
-      <h1>Payment Successful!</h1>
-      <p>Thank you for your payment. Your transaction was successful.</p>
-
-      <div className="transaction-details">
-        <h3>Transaction Details</h3>
-        <p>
-          <strong>Amount Paid:</strong> NPR {total_amount}
-        </p>
-        <p>
-          <strong>Transaction ID:</strong> {product_id}
-        </p>
-        {paymentStatus === "COMPLETED" && (
-          <>
-            <p>
-              <strong>Payment Method:</strong> {isKhalti ? "Khalti" : "eSewa"}
-            </p>
-            <p>
-              <strong>Status:</strong> Completed
-            </p>
-          </>
-        )}
-      </div>
-
-      {/* <p>
-        We've sent a confirmation email with these details to your registered
-        email address.
-      </p> */}
-
-      <button onClick={() => navigate("/")} className="go-home-button">
-        Go to Homepage
-      </button>
     </div>
   );
-};
-
-export default Success;
+}

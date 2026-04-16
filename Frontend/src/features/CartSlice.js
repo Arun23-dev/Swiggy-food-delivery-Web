@@ -233,11 +233,11 @@ const cartSlice = createSlice({
             })
             .addCase(addItemToBackend.fulfilled, (state, action) => {
                 state.synced = true;
-                console.log('Item synced to backend successfully');
+                // console.log('Item synced to backend successfully');
             })
             .addCase(addItemToBackend.rejected, (state, action) => {
                 state.error = action.payload;
-                console.error('Failed to sync item to backend:', action.payload);
+                // console.error('Failed to sync item to backend:', action.payload);
                 // Keep synced = false,
                 //  localStorage has the data
                 state.synced=false;
@@ -273,7 +273,6 @@ const cartSlice = createSlice({
 
             //for the success of the cart
             .addCase(createOrder.fulfilled, (state, action) => {
-            console.log(action.payload);
             if (action.payload.success) {
             deleteCartItemInLocalStorage('cart');
             state.items = [];   

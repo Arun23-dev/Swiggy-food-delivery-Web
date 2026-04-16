@@ -29,13 +29,13 @@ const paymentSchema = new Schema({
         enum: ['pending', 'paid', 'failed', 'refunded'],
         default: 'pending',
     },
-     transactionId: {
+    transactionId: {
         type: String,
         default: null,
         unique: true,  // Consider adding unique constraint
         index: true    // Add index for faster lookups
     },
-   gatewayData: {
+    gatewayData: {
         pidx: { type: String },      // Payment ID from gateway
         mobile: { type: String },     // User's mobile for verification
         amount: { type: Number },     // Verified amount
@@ -50,4 +50,9 @@ const paymentSchema = new Schema({
         type: Date,
         default: null
     }
-})
+}, {
+    timestamps: true,
+}
+);
+const Payment = mongoose.model('Payment', paymentSchema);
+module.exports = Payment;
