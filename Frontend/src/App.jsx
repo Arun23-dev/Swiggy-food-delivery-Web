@@ -30,7 +30,7 @@ import Success from './components/Success'
 import Failure from './components/Failure'
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from './features/UserSlice';
-import { fetchResturant } from './features/ResturantSlice';
+import { fetchRestaurants } from './features/ResturantSlice';
 
 
 function App() {
@@ -47,7 +47,7 @@ function App() {
       dispatch(checkAuth());
     }
     if (!data) {
-      dispatch(fetchResturant());
+      dispatch(fetchRestaurants());
     }
 
   }, [])

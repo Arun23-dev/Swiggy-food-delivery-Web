@@ -11,10 +11,10 @@ const redisClient = require('./src/config/redis');
 const userRouter=require('./src/routes/user-routes');
 const cartRouter=require('./src/routes/cart-routes')
 const orderRouter=require('./src/routes/order-routes')
-const paymentRouter=require('./src/routes/payment-routes')
+const paymentRouter=require('./src/routes/payment-routes');
+const restaurantRouter = require('./src/routes/restaurant-routes');
 
 const app = express();
-
 const corsOptions = {
     origin:  'http://localhost:5173',
     credentials: true,
@@ -35,7 +35,8 @@ app.get('/test', (req, res) => {
 app.use('/api/user',userRouter);
 app.use('/api/cart',cartRouter);
 app.use('/api/order',orderRouter);
-app.use('/api/payment',paymentRouter)
+app.use('/api/payment',paymentRouter);
+app.use('/api/restaurants',restaurantRouter)
 
 const initailizeConnection=async ()=>{
     try{
