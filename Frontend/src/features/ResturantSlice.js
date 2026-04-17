@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "@/Utils/axiosClient";
+import { saveToCache,getFromCache } from "@/Utils/CacheManager";
 
 
  function  extractRestaurantsFromCards(cards){
@@ -17,8 +18,22 @@ import axiosClient from "@/Utils/axiosClient";
 export const fetchRestaurants = createAsyncThunk(
     'resturant/fetchResturant',
     async (_, { rejectWithValue }) => {
+         const CACHE_URL = '/api/restaurants';
+
         try {
+
+
+            const cachedData = await getFromCache(CACHE_URL);
+            if (cachedData) {
+                console.log('✅ Returning cached restaurant data');
+                return cachedData;
+            }
+
             const response = await axiosClient.get('api/restaurants');
+
+
+             await saveToCache(CACHE_URL, response.data);
+
             return response.data;
         } catch (error) {
             return rejectWithValue({ message: "Error occurred" });
@@ -54,6 +69,8 @@ const restaurantSlice = createSlice({
         loadingMore: false,
         error: null,
         loadMoreError: null,
+
+        cachedAt: null,
     },
     // NO reducers section - no resetRestaurants needed!
     extraReducers: (builder) => {
@@ -68,6 +85,7 @@ const restaurantSlice = createSlice({
                 state.allRestaurants = restaurants;
                 state.offset = restaurants.length;  // Same as setOffset(initialRestaurants.length)
                 state.loading = false;
+                state.cachedAt = Date.now();
             })
             .addCase(fetchRestaurants.rejected, (state, action) => {
                 state.error = action.payload;
