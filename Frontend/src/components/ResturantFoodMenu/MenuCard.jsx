@@ -1,28 +1,43 @@
-import React, { useState } from "react";
-import MenuDetails from '../ResturantFoodMenu/MenuDetails'
+import { useState } from "react";
+import MenuDetails from "./MenuDetails";
+export default function MenuCard({ data, dropState, selected, bestSeller }) {
 
-function MenuCard({ data, dropState }) {
   const [dropDown, setDropdown] = useState(dropState ?? true);
 
   function toggle() {
     setDropdown((prev) => !prev);
   }
 
+  function filterItem(item) {
+    const classifier = item?.card?.info?.itemAttribute?.vegClassifier;
+    const vegMatch = selected === "veg" ? classifier === "VEG" : true;
+    const nonvegMatch = selected === "nonveg" ? classifier === "NONVEG" : true;
+    const bestsellerMatch = bestSeller ? item?.card?.info?.isBestseller === true : true;
+    return vegMatch && nonvegMatch && bestsellerMatch;
+  }
+
   if (data?.itemCards) {
     const { title, itemCards } = data;
+    const filteredItems = itemCards.filter(filterItem);
+
+    if (filteredItems.length === 0) return null;
+
     return (
       <>
-        <div key={title} >
-          <div className="flex justify-between my-3 mx-5 ">
+        <div>
+          <div className="flex justify-between my-3 mx-5">
             <h1 className={`font-bold ${dropState ? "text-xl" : "text-base"}`}>
-              {title}({itemCards.length})
+              {title}({filteredItems.length})
             </h1>
             <i
-              className={` text-3xl text-black fi fi-rr-angle-small-${dropDown ? "up" : "down"} `}
-              onClick={toggle}></i>
+              className={`text-3xl text-black fi fi-rr-angle-small-${dropDown ? "up" : "down"}`}
+              onClick={() => setDropdown((prev) => !prev)}
+            />
           </div>
-          {dropDown && itemCards.map((data) => <MenuDetails Details={data} key={data.card.info.name} />)}
-
+          {dropDown &&
+            filteredItems.map((item) => (
+              <MenuDetails Details={item} key={item.card.info.name} />
+            ))}
         </div>
         <div
           style={{ height: dropState ? "16px" : "4px" }}
@@ -31,24 +46,23 @@ function MenuCard({ data, dropState }) {
       </>
     );
   }
-  if (data.categories) {
+
+  if (data?.categories) {
     return (
       <div>
-        <h1 className="font-bold text-xl">
-          {data.title}({data.categories.length})
-        </h1>
-
+        <h1 className="font-bold text-xl">{data.title}</h1>
         {data.categories.map((category) => (
-          <div>
-            {/* <h1>{category.title}({category.itemCards.length})</h1> */}
-
-            <MenuCard data={category} dropState={false} />
-          </div>
+          <MenuCard
+            data={category}
+            dropState={false}
+            key={category.title}
+            selected={selected}       
+            bestSeller={bestSeller}    
+          />
         ))}
       </div>
     );
   }
+
   return null;
 }
-
-export default MenuCard;
