@@ -6,7 +6,7 @@ function Header() {
   const customButton=( <div
         className="bg-black w-[135px] h-[54px] flex items-center justify-center rounded-[16px]" >
       Sign in
-   </div>)
+    </div>)
 
   const  { AuthUI, isAuthenticated, user } = useAuth(customButton);
 
@@ -57,7 +57,7 @@ function Header() {
 
   {/* call the function here man  */}
   <AuthUI/>
-   
+    
   </div>
 </div>
 
@@ -79,10 +79,10 @@ function Header() {
         </div>
 
         <div className="flex justify-center gap-4 max-w-7/10 container mx-auto mt-13">
-            <div class="flex items-center justify-between bg-white rounded-2xl px-4 py-3 w-80 shadow">
+            <div className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 w-80 shadow">
     
     <div class="flex items-center space-x-2">
- 
+    
       <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5 14.5 7.6 14.5 9 13.4 11.5 12 11.5z"/>
       </svg>
@@ -100,14 +100,14 @@ function Header() {
             className="
         border-black rounded-2xl bg-white h-15 w-121 px-4 py-6 border-1.25 font-normal text-[1.125rem] text-[#02060c73]"
             type="text"
-            placeholder="Search for resturants,item or1 more"
+            placeholder="Search for resturants,item or more"
           />
         </div>
       </div> 
 
       <div>
         <div className="flex justify-center ">
-        <Link to="/resturants">
+        <Link to="/restaurants">
           <img
             src="https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/MERCHANDISING_BANNERS/IMAGES/MERCH/2024/7/23/ec86a309-9b06-48e2-9adc-35753f06bc0a_Food3BU.png"
             alt="img3"
@@ -118,20 +118,20 @@ function Header() {
 
         <a href="https://www.swiggy.com/instamart?entryId=1234&entryName=mainTileEntry4&v=1" >
           <img src="https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/MERCHANDISING_BANNERS/IMAGES/MERCH/2024/7/23/b5c57bbf-df54-4dad-95d1-62e3a7a8424d_IM3BU.png"
-           alt="img4"
+            alt="img4"
             className="h-[18.75rem] w-[20.375rem]"
-           />
+            />
           </a>
 
-          <Link to="/resturants">
+          <Link to="/restaurants">
           <img src="https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/MERCHANDISING_BANNERS/IMAGES/MERCH/2024/7/23/b6d9b7ab-91c7-4f72-9bf2-fcd4ceec3537_DO3BU.png"
           alt="img5"
             className="h-[18.75rem] w-[20.375rem]"
           />
-         </Link>
+          </Link>
         </div>
       </div>
- 
+    
     </header>
   );
 }

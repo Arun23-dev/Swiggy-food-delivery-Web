@@ -2,42 +2,34 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router";
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import axiosClient from "../Utils/axiosClient";
 
 export default function Success() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState("verifying");
-  const [orderDetails, setOrderDetails] = useState(null);
 
   useEffect(() => {
     const verifyPayment = async () => {
       try {
         const dataParam = searchParams.get("data");
         if (!dataParam) {
-          navigate('/checkout/payment/esewa/failure');
+          setStatus("failed");
           return;
         }
 
         const decodedData = JSON.parse(atob(dataParam));
         const { transaction_uuid, total_amount } = decodedData;
 
-        // Verify with backend
-        const response = await fetch(
-          `http://localhost:3000/api/payment/esewa/verify?transaction_uuid=${transaction_uuid}&total_amount=${total_amount}`
+        const result = await axiosClient.get(
+          `/api/payment/esewa/verify?transaction_uuid=${transaction_uuid}&total_amount=${total_amount}`
         );
-        const result = await response.json();
 
-        if (result.status === "COMPLETE") {
-          // Fetch order details using transaction_uuid
-          const orderResponse = await fetch(
-            `http://localhost:3000/api/order/by-transaction/${transaction_uuid}`
-          );
-          const orderData = await orderResponse.json();
-          setOrderDetails(orderData);
-          setStatus("success");
+        const paymentStatus = result.data.status;
 
-          // Optional: Save order data to global state/context here
-          // e.g., useOrderContext().setLastOrder(orderData)
+        if (paymentStatus === "COMPLETE") {
+          // No need to fetch order details – just mark success
+          setStatus(paymentStatus);
         } else {
           setStatus("failed");
         }
@@ -49,6 +41,13 @@ export default function Success() {
 
     verifyPayment();
   }, [searchParams, navigate]);
+
+  // Redirect on failure
+  useEffect(() => {
+    if (status === "failed") {
+      navigate('/checkout/payment/esewa/failure');
+    }
+  }, [status, navigate]);
 
   // Verifying state
   if (status === "verifying") {
@@ -71,14 +70,6 @@ export default function Success() {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
           <p className="text-gray-600 mb-6">Your order has been confirmed</p>
 
-          {orderDetails && (
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-              <p className="text-sm text-gray-600">Order ID: <span className="font-semibold">{orderDetails._id}</span></p>
-              <p className="text-sm text-gray-600 mt-1">Amount Paid: <span className="font-semibold">₹{orderDetails.totalAmount}</span></p>
-              <p className="text-sm text-gray-600 mt-1">Transaction ID: <span className="font-semibold">{orderDetails.transactionId}</span></p>
-            </div>
-          )}
-
           <button
             onClick={() => navigate("/dashboard/order")}
             className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600"
@@ -94,12 +85,6 @@ export default function Success() {
         </div>
       </div>
     );
-  }
-
-  // Failed state – redirect to failure page
-  if (status === "failed") {
-    navigate('/checkout/payment/esewa/failure');
-    return null;
   }
 
   // Error state

@@ -1,7 +1,7 @@
-import { useSelector, useDispatch } from "react-redux"; // Added useDispatch
-import {  useParams, useNavigate, useLocation } from "react-router";
-import  useAuth  from "../../hooks/useAuth";
-import { setRedirectURL } from "@/features/RedirectSlice"; // Fixed: removed extra quote
+import { useSelector, useDispatch } from "react-redux";
+import { useParams, useNavigate, useLocation } from "react-router";
+import useAuth from "../../hooks/useAuth";
+import { setRedirectURL } from "@/features/RedirectSlice"; 
 // import { syncCartAfterLogin } from "@/features/cart/cartSlice";
 
 export default function CommonHeader() {
@@ -134,10 +134,10 @@ export default function CommonHeader() {
             </div>
 
             {/* Cart Section - Fixed */}
-            <div 
+            <div
               className="flex items-center gap-3 bg-orange-500 hover:bg-orange-600 active:scale-95 
-                         text-white px-5 py-2.5 rounded-2xl transition-all font-bold shadow-md 
-                         hover:shadow-lg cursor-pointer"
+                                 text-white px-5 py-2.5 rounded-2xl transition-all font-bold shadow-md 
+                              hover:shadow-lg cursor-pointer"
               onClick={handleClick}
             >
               {/* Cart Icon Wrapper */}

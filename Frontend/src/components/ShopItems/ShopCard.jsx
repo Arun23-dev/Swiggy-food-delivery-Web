@@ -1,4 +1,5 @@
 import { ShopData } from "../../Utils/ShopData"
+import {SWIGGY_IMAGE_BASE_URL_FOR_DINE} from "../../Utils/Constants"
 
 export default function ShopCard({shopdata}) {
   
@@ -7,7 +8,7 @@ export default function ShopCard({shopdata}) {
           <a href={shopdata?.action?.link ?? "#"}>
             <img
               className="min-h-[11.25rem] min-w-[9rem]"
-              src={`https://media-assets.swiggy.com/swiggy/image/upload/${shopdata?.imageId}`}
+              src={`${SWIGGY_IMAGE_BASE_URL_FOR_DINE}${shopdata?.imageId}`}
               alt={shopdata?.name ?? "Shop Image"}
             />
           </a>

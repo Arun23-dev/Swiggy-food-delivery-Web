@@ -31,6 +31,9 @@ import Failure from './components/Failure'
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from './features/UserSlice';
 import { fetchRestaurants } from './features/ResturantSlice';
+import Dashboard from './pages/Dashboard';
+import ProfileSettings from "./pages/ProfileSettings"
+import PaymentPage from './pages/PaymentPage';
 
 
 function App() {
@@ -72,7 +75,7 @@ function App() {
 
         {/* MAIN LAYOUT - With header for restaurant pages */}
         <Route element={<MainLayout />}>
-          <Route path='/resturants' element={<Resturants />} />
+          <Route path='/restaurants' element={<Resturants />} />
           <Route path='/city/delhi/:restaurantId'>
             <Route index element={<ResturantMenu />} />          {/* exact match only */}
             <Route path='search' element={<SearchPage />} />     {/* /city/delhi/:id/search */}
@@ -83,13 +86,15 @@ function App() {
 
       <Route element={<ProtectedRoutes />}>
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<div>Dashboard Home</div>} />
-          <Route path="order" element={<Order />} />
-          <Route path="cart" element={<Cart />} />
+          <Route index element={<Dashboard />} />              {/* /dashboard */}
+          <Route path="orders" element={<Order />} />            {/* /dashboard/orders */}
+          <Route path="cart" element={<Cart />} />       
+          <Route path="payment" element={<PaymentPage />} />                {/* /dashboard/cart */}
+          <Route path="profile" element={< ProfileSettings/>} />  {/* /dashboard/profile */}
         </Route>
       </Route>
 
-// In your router setup
+
       <Route path="/checkout/payment/esewa/success" element={<Success />} />
       <Route path="/checkout/payment/esewa/failure" element={<Failure />} />
     </Routes>

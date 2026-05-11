@@ -1,19 +1,18 @@
 
+import axiosClient  from "../Utils/axiosClient";
+export async function initiateEsewaPayment({ amount, orderId, transactionId, tax_amount = "0" }) {
 
-export async function initiateEsewaPayment({ amount,orderId,transactionId, tax_amount = "0" }) {
+  const response = await axiosClient.post(
+    "/api/payment/esewa/initiate",
+    {
+      amount,
+      tax_amount,
+      transactionId,
+      orderId,
+    }
+  );
 
-
-  const res = await fetch("http://localhost:3000/api/payment/esewa/initiate", {
-          method: "POST",
-          credentials: 'include',
-          headers: {
-            "Content-Type": "application/json",
-             
-          },
-          body: JSON.stringify({ amount, tax_amount ,transactionId,orderId}),
-        });
-
-  const data = await res.json();
+  const data = response.data;
 
   const form = document.createElement("form");
   form.method = "POST";

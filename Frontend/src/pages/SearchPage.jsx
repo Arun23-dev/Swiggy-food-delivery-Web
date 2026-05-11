@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import MenuDetails from "../components/ResturantFoodMenu/MenuDetails";
+import { useSelector } from "react-redux";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -8,15 +9,13 @@ export default function SearchPage() {
   const [showData, setShowData] = useState([]);
 
   const { restaurantId } = useParams();
+  
+  const { cache, loading } = useSelector((state) => state.foodMenu)
+
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const proxyServer = "https://cors-anywhere.herokuapp.com/";
-        const swiggyAPI = `https://www.swiggy.com/mapi/menu/pl?page-type=REGULAR_MENU&complete-menu=true&lat=28.7040592&lng=77.10249019999999&restaurantId=${restaurantId}&catalog_qa=undefined&submitAction=ENTER`;
 
-        const response = await fetch(proxyServer + swiggyAPI);
-        const data = await response.json();
+        const data =cache[restaurantId]
 
         const cards =
           data?.data?.cards.at(-1)?.groupedCard?.cardGroupMap?.REGULAR?.cards ||
@@ -41,13 +40,8 @@ export default function SearchPage() {
          }
         })
 
-        setMenuData(filteredArrayData);
+        setMenuData(filteredArrayData); 
 
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    }
-    fetchData();
   }, [restaurantId]);
 
   useEffect(() => {
@@ -110,5 +104,4 @@ export default function SearchPage() {
     </div >
   );
 }
-
 

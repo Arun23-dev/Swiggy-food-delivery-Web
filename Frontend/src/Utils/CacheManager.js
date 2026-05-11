@@ -18,9 +18,9 @@ export const saveToCache = async (url, data) => {
             headers: { 'Content-Type': 'application/json' }
         });
         await cache.put(url, response);
-        console.log('💾 Saved to browser cache');
+        // console.log('💾 Saved to browser cache');
     } catch (error) {
-        console.error('Cache save failed:', error);
+        // console.error('Cache save failed:', error);
     }
 };
 
@@ -34,13 +34,13 @@ export const getFromCache = async (url) => {
             const isExpired = Date.now() - cacheData.timestamp > CACHE_DURATION;
             
             if (!isExpired) {
-                console.log('📦 Using browser cache');
+                // console.log('📦 Using browser cache');
                 return cacheData.data;
             }
             
             // Cache expired, delete it
             await cache.delete(url);
-            console.log('⏰ Cache expired');
+            // console.log('⏰ Cache expired');
         }
         return null;
     } catch (error) {

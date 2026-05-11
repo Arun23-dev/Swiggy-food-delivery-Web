@@ -1,7 +1,7 @@
 // features/cart/cartSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosClient from "../Utils/axiosClient";
-import {createOrder} from '@/features/OrderSlice'
+import { createOrder } from '@/features/OrderSlice'
 
 // Load cart from localStorage
 const loadCartFromLocalStorage = () => {
@@ -14,10 +14,10 @@ const loadCartFromLocalStorage = () => {
         console.error('Error loading cart from localStorage:', error);
     }
     return {
-         items: [],
-          count: 0,
-          guestId: null
-         };
+        items: [],
+        count: 0,
+        guestId: null
+    };
 };
 
 // Save cart to localStorage
@@ -32,18 +32,26 @@ const saveCartToLocalStorage = (cart) => {
         console.error('Error saving cart to localStorage:', error);
     }
 };
-const deleteCartItemInLocalStorage = (itemId) => {
-    try {
-        const existingCart = JSON.parse(localStorage.getItem('cart')) || [];
-        
-        // filter out the item you want to remove
-        const updatedCart = existingCart.filter(item => item.itemId !== itemId);
-        
-        localStorage.setItem('cart', JSON.stringify(updatedCart));
-    } catch (error) {
-        console.log("Error while deleting cart item in localStorage: ", error);
-    }
-}
+// const deleteCartItemInLocalStorage = (itemId) => {
+//     try {
+//         const raw = localStorage.getItem('cart');
+//         let existingCart = [];
+//         if (raw) {
+//             const parsed = JSON.parse(raw);
+//             if (Array.isArray(parsed)) {
+//                 existingCart = parsed;
+//             } else if (parsed && typeof parsed === 'object') {
+//                 // Convert object to array if needed, but better to log and reset
+//                 // console.warn('Cart data is not an array, resetting cart');
+//                 existingCart = [];
+//             }
+//         }
+//         const updatedCart = existingCart.filter(item => item.itemId !== itemId);
+//         localStorage.setItem('cart', JSON.stringify(updatedCart));
+//     } catch (error) {
+//         console.log("Error while deleting cart item in localStorage: ", error);
+//     }
+// }
 
 // Generate guest ID for non-logged in users
 const generateGuestId = () => {
@@ -54,22 +62,28 @@ const generateGuestId = () => {
 // Sync local cart with backend after login
 export const syncCartAfterLogin = createAsyncThunk(
     'cart/syncAfterLogin',
-    async (userId, { getState, rejectWithValue }) => {
+    async ({ syncType }, { getState, rejectWithValue }) => {
         try {
             const { cart } = getState();
-            
+            console.log("Sync type", syncType)
             const localCart = {
-                items: cart.items,
+                items: cart.items.map(item => ({
+                    swiggyItemId: item.swiggyItemId,
+                    name: item.name,
+                    price: item.price,
+                    image: item.image,
+                    quantity: item.quantity
+                })),
                 count: cart.count
             };
-            
+          
             const response = await axiosClient.post('api/cart/sync', {
-                userId,
+                syncType,
                 localCart
             });
-            console.log("Response from the bacind in sync cart",response);
-            return response.data.cart; 
-        } 
+     
+            return response.data.cart;
+        }
         catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);
         }
@@ -82,12 +96,11 @@ export const addItemToBackend = createAsyncThunk(
     'cart/addItemToBackend',
     async ({ userId, product }, { rejectWithValue }) => {
         try {
-            console.log("product",product);
             const response = await axiosClient.post('/api/cart/add', {
                 userId,
-               product
+                product
             });
-            console.log(response)
+    
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);
@@ -98,18 +111,37 @@ export const addItemToBackend = createAsyncThunk(
 
 // Remove item from backend
 export const removeItemFromBackend = createAsyncThunk(
-    'cart/removeItemFromBackend',
-    async ({ userId, itemId }, { rejectWithValue }) => {
+    'cart/removeItemBackend',
+    async ({ swiggyItemId }, { rejectWithValue }) => {
         try {
-            const response = await axiosClient.delete(`/cart/item/${itemId}`, {
-                data: { userId }
+            
+            const response = await axiosClient.delete(`api/cart/remove/${swiggyItemId}`, {
             });
-            return { itemId, ...response.data };
+           
+            return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);
         }
     }
 );
+export const updateItemBackend = createAsyncThunk(
+    'cart/updateItemBackend',
+    async ({ swiggyItemId, quantity }, { rejectWithValue }) => {
+        try {
+            console.log(swiggyItemId)
+            console.log(quantity)
+            const response = await axiosClient.patch(`/api/cart/update/${swiggyItemId}`, {
+                quantity
+            });
+
+    
+            return response.data ;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || error.message);
+        }
+    }
+
+)
 
 // Clear backend cart
 export const clearBackendCart = createAsyncThunk(
@@ -139,13 +171,18 @@ const cartSlice = createSlice({
     reducers: {
 
         addItem: (state, action) => {
-            const existingItem = state.items.find(item => item.id === action.payload.id);
-                
-            const filteredData={
-                id:action.payload.id,
-                name:action.payload.name,
-                price:action.payload?.defaultPrice || action.payload?.price,
-                image:action.payload.imageId
+            if (!state.items) {
+                state.items = [];
+
+            }
+            const existingItem = state.items?.find(item => item.swiggyItemId === action.payload.id);
+
+            console.log("Printing the payload", action.payload)
+            const filteredData = {
+                swiggyItemId: action.payload.id,
+                name: action.payload.name,
+                price: action.payload?.defaultPrice || action.payload?.price,
+                image: action.payload.imageId
             }
             if (existingItem) {
                 existingItem.quantity += 1;
@@ -154,14 +191,14 @@ const cartSlice = createSlice({
             }
             state.count = state.items.reduce((sum, item) => sum + item.quantity, 0);
             state.synced = false;
-
-            // Save to localStorage immediately
             saveCartToLocalStorage(state);
         },
 
         // Increase item quantity
         increaseItem: (state, action) => {
-            const item = state.items.find(item => item.id === action.payload.id);
+            const id = action.payload.id || action.payload.swiggyItemId;
+            const item = state.items.find(item => item.swiggyItemId === id);
+            // const item = state.items.find(item => item.swiggyItemId === action.payload.id);
             if (item) {
                 item.quantity += 1;
                 state.count = state.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -172,12 +209,15 @@ const cartSlice = createSlice({
 
         // Decrease item quantity
         decreaseItem: (state, action) => {
-            const item = state.items.find(item => item.id === action.payload.id);
+
+            const id = action.payload.id || action.payload.swiggyItemId;
+            const item = state.items.find(item => item.swiggyItemId === id);
+            // const item = state.items.find(item => item.swiggyItemId === action.payload.id);
             if (item) {
                 if (item.quantity > 1) {
                     item.quantity -= 1;
                 } else {
-                    state.items = state.items.filter(i => i.id !== action.payload.id);
+                    state.items = state.items.filter(i => i.swiggyItemId !== id);
                 }
                 state.count = state.items.reduce((sum, item) => sum + item.quantity, 0);
                 state.synced = false;
@@ -187,7 +227,7 @@ const cartSlice = createSlice({
 
         // Remove item
         removeItem: (state, action) => {
-            state.items = state.items.filter(item => item.id !== action.payload.id);
+            state.items = state.items.filter(item => item.swiggyItemId !== action.payload.id);
             state.count = state.items.reduce((sum, item) => sum + item.quantity, 0);
             state.synced = false;
             saveCartToLocalStorage(state);
@@ -207,7 +247,7 @@ const cartSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
-        // Sync cart after login
+
         builder
             .addCase(syncCartAfterLogin.pending, (state) => {
                 state.loading = true;
@@ -225,25 +265,26 @@ const cartSlice = createSlice({
                 state.error = action.payload;
             })
 
-           
-            
-             .addCase(addItemToBackend.pending, (state) => {
-                // Don't set loading true to avoid UI flicker
+            .addCase(addItemToBackend.pending, (state) => {
                 state.error = null;
             })
             .addCase(addItemToBackend.fulfilled, (state, action) => {
                 state.synced = true;
-                // console.log('Item synced to backend successfully');
             })
             .addCase(addItemToBackend.rejected, (state, action) => {
                 state.error = action.payload;
-                // console.error('Failed to sync item to backend:', action.payload);
-                // Keep synced = false,
-                //  localStorage has the data
-                state.synced=false;
+                state.synced = false;
             })
 
-            // Remove from backend
+            .addCase(updateItemBackend.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(updateItemBackend.fulfilled, (state) => {
+                state.synced = true;
+            })
+            .addCase(updateItemBackend.rejected, (state, action) => {
+                state.error = action.payload;
+            })
             .addCase(removeItemFromBackend.pending, (state) => {
                 state.error = null;
             })
@@ -254,7 +295,6 @@ const cartSlice = createSlice({
                 state.error = action.payload;
             })
 
-            // Clear backend cart
             .addCase(clearBackendCart.pending, (state) => {
                 state.loading = true;
             })
@@ -270,21 +310,18 @@ const cartSlice = createSlice({
                 state.error = action.payload;
             })
 
-
-            //for the success of the cart
             .addCase(createOrder.fulfilled, (state, action) => {
-            if (action.payload.success) {
-            deleteCartItemInLocalStorage('cart');
-            state.items = [];   
-            state.count = 0;      
-            state.total = 0;   
-            state.synced=false;   
-         }
-         })
+                if (action.payload.success) {
+                    state.items = [];
+                    state.count = 0;
+                    state.total = 0;
+                    state.synced = false;
+                    saveCartToLocalStorage(state);
+                }
+            })
     }
 });
 
-// Export actions
 export const {
     addItem,
     increaseItem,

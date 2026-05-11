@@ -4,9 +4,9 @@ import { Outlet } from 'react-router'
 function MainLayout() {
   return (
     <div>
-        
-       <CommonHeader/>
-        <Outlet></Outlet>
+
+      <CommonHeader />
+      <Outlet></Outlet>
     </div>
   )
 }

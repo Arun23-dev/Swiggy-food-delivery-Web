@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "@/Utils/axiosClient";
-import { saveToCache,getFromCache } from "@/Utils/CacheManager";
+import { saveToCache, getFromCache } from "@/Utils/CacheManager";
 
 
- function  extractRestaurantsFromCards(cards){
+function extractRestaurantsFromCards(cards) {
 
     for (const card of cards) {
         const restaurants = card?.card?.card?.gridElements?.infoWithStyle?.restaurants;
@@ -18,21 +18,17 @@ import { saveToCache,getFromCache } from "@/Utils/CacheManager";
 export const fetchRestaurants = createAsyncThunk(
     'resturant/fetchResturant',
     async (_, { rejectWithValue }) => {
-         const CACHE_URL = '/api/restaurants';
+        const CACHE_URL = '/api/restaurants';
 
         try {
 
-
             const cachedData = await getFromCache(CACHE_URL);
             if (cachedData) {
-                console.log('✅ Returning cached restaurant data');
                 return cachedData;
             }
 
             const response = await axiosClient.get('api/restaurants');
-
-
-             await saveToCache(CACHE_URL, response.data);
+            await saveToCache(CACHE_URL, response.data);
 
             return response.data;
         } catch (error) {
@@ -40,16 +36,16 @@ export const fetchRestaurants = createAsyncThunk(
         }
     }
 );
-
 // Load more (WITH offset)
 export const loadMoreRestaurants = createAsyncThunk(
     'resturant/loadMoreRestaurants',
     async ({ offset }, { rejectWithValue }) => {
-
-        console.log(offset);
         try {
             const response = await axiosClient.get(`api/restaurants?offset=${offset}`);
+
+            console.log("Second  Fetched Data Here", response.data);
             return response.data;
+
         } catch (error) {
             return rejectWithValue({ message: "Error loading more" });
         }
@@ -57,7 +53,7 @@ export const loadMoreRestaurants = createAsyncThunk(
 );
 
 
- 
+
 const restaurantSlice = createSlice({
     name: 'restaurant',
     initialState: {
@@ -69,7 +65,6 @@ const restaurantSlice = createSlice({
         loadingMore: false,
         error: null,
         loadMoreError: null,
-
         cachedAt: null,
     },
     // NO reducers section - no resetRestaurants needed!
@@ -91,7 +86,7 @@ const restaurantSlice = createSlice({
                 state.error = action.payload;
                 state.loading = false;
             })
-            
+
             .addCase(loadMoreRestaurants.pending, (state) => {
                 state.loadingMore = true;
                 state.loadMoreError = null;
@@ -101,8 +96,12 @@ const restaurantSlice = createSlice({
                 if (!newRestaurants.length) {
                     state.hasMore = false;
                 } else {
-                    state.allRestaurants = [...state.allRestaurants, ...newRestaurants];
-                    state.offset = state.offset + newRestaurants.length;
+                
+                    const existingIds = new Set(state.allRestaurants.map(r => r.info.id));
+                    const unique = newRestaurants.filter(r => !existingIds.has(r.info.id));
+
+                    state.allRestaurants = [...state.allRestaurants, ...unique];
+                    state.offset = state.offset + newRestaurants.length; // keep original length for API offset
                 }
                 state.loadingMore = false;
             })

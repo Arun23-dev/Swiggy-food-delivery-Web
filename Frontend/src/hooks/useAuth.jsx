@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from 'react-router'; // Fixed import
 import { toast } from 'react-hot-toast';
 import { clearCart } from '@/features/CartSlice';
 
-export  default  function useAuth(customButton = null) {
+export default function useAuth(customButton = null) {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -39,16 +39,16 @@ export  default  function useAuth(customButton = null) {
     try {
       const result = await dispatch(loginUser(credentials)).unwrap();
       toast.success(`Welcome back, ${result.user?.firstName || 'User'}!`);
-        
-        if (result.payload?.success) {
-            // 2. After successful login, sync local cart with backend
-            const userId = result.payload.user.id;
-            await dispatch(syncCartAfterLogin(userId));
-            
-            // 3. Cart is now merged and synced
-            console.log('Cart synced successfully');
-        }
-        return result;
+
+      if (result.payload?.success) {
+        // 2. After successful login, sync local cart with backend
+        const userId = result.payload.user.id;
+        await dispatch(syncCartAfterLogin(userId));
+
+        // 3. Cart is now merged and synced
+        console.log('Cart synced successfully');
+      }
+      return result;
     } catch (err) {
       toast.error(err.message || 'Login failed');
       throw err;
@@ -58,7 +58,7 @@ export  default  function useAuth(customButton = null) {
   const register = async (userData) => {
     try {
       const result = await dispatch(registerUser(userData)).unwrap();
-      toast.success(`Welcome ${result.user?.firstName || 'User'}! Registration successful`);
+      toast.success(`Welcome ${result.user?.firstName }! Registration successful`);
       return result;
     } catch (err) {
       toast.error(err.message || 'Registration failed');
@@ -70,7 +70,7 @@ export  default  function useAuth(customButton = null) {
     setIsLoggingOut(true);
     try {
       await dispatch(logoutUser()).unwrap();
-     
+
       toast.success('Logged out successfully');
       setShowDropdown(false);
       navigate(location.pathname);
@@ -169,25 +169,14 @@ export  default  function useAuth(customButton = null) {
             <MenuItem
               icon="📦"
               label="My Orders"
-              onClick={() => handleNavigation('/orders')}
-              badge="3"
+              onClick={() => handleNavigation('/dashboard/orders')}
+            
             />
             <MenuItem
               icon="👤"
               label="Profile Settings"
               onClick={() => handleNavigation('/profile')}
             />
-            <MenuItem
-              icon="❤️"
-              label="Saved Items"
-              onClick={() => handleNavigation('/saved')}
-            />
-            <MenuItem
-              icon="🔔"
-              label="Notifications"
-              onClick={() => handleNavigation('/notifications')}
-            />
-
             <hr className="my-2 border-gray-100" />
 
             <MenuItem

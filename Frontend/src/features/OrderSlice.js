@@ -20,7 +20,7 @@ export const getMyOrders = createAsyncThunk(
     'order/getMyOrders',
     async (_, { rejectWithValue }) => {
         try {
-            const res = await axiosClient.get('/api/orders/my-orders');
+            const res = await axiosClient.get('/api/order/my-orders');
             return res.data.orders;
         } catch (err) {
             return rejectWithValue(err.response?.data?.message);

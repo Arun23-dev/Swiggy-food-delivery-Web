@@ -2,8 +2,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "../Utils/axiosClient";
 
-// ─── Thunks ───────────────────────────────────────────────
-
 export const registerUser = createAsyncThunk(
   'user/register',
   async (userData, { rejectWithValue }) => {
@@ -104,7 +102,7 @@ const userSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
 
-    // register
+
     builder
       .addCase(registerUser.pending, (state) => {
         state.loading = true;

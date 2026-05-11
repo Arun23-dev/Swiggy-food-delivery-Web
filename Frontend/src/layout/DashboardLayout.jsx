@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import Order from '../pages/Order';
-import Cart from '../pages/Cart';
+// layouts/DashboardLayout.jsx
+import React from "react";
+import { Outlet, useNavigate, useLocation } from "react-router";
 import {
   Sidebar,
   SidebarContent,
@@ -11,92 +11,140 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarTrigger,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
 
-const navItems = [
+const navSections = [
   {
-    key: 'orders',
-    label: 'Orders',
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round"
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    ),
+    title: "Main",
+    items: [
+      { key: "", label: "Dashboard", icon: "📊", path: "/dashboard" },
+      { key: "orders", label: "My Orders", icon: "📦", path: "/dashboard/orders" },
+      { key: "cart", label: "Cart", icon: "🛒", path: "/dashboard/cart" },
+      { key: "payment", label: "Payments", icon: "💵", path: "/dashboard/payment" },
+    ],
   },
   {
-    key: 'cart',
-    label: 'Cart',
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round"
-          d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
-      </svg>
-    ),
-  },
+    title: "Account",
+    items: [
+      { key: "profile", label: "Profile Settings", icon: "👤", path: "/dashboard/profile" }, 
+    ],
+  }
+  
 ];
 
+const pageMeta = {
+  "": { title: "Dashboard", sub: "Overview of your activity" },
+  "orders": { title: "My Orders", sub: "Track your food journey" },
+  "cart": { title: "My Cart", sub: "Review and checkout items" },
+  "payment ": { title: "My Payment", sub: "Review your paid money" },
+  "profile": { title: "Profile Settings", sub: "Manage your account" },
+};
+
 const DashboardLayout = () => {
-  const [activeTab, setActiveTab] = useState('orders');
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the current route key from pathname
+  const currentPath = location.pathname.replace("/dashboard", "").replace("/", "");
+  const meta = pageMeta[currentPath] || pageMeta[""];
+
+  // Handle logout
+  const handleLogout = () => {
+    // Clear auth state
+    localStorage.removeItem('token');
+    // Navigate to login
+    navigate('/login');
+  };
 
   return (
-    <SidebarProvider  defaultOpen={true} style={{ '--sidebar-width': '250px', '--sidebar-width-icon': '60px' }}>
-      <div className="flex min-h-screen w-full bg-slate-50">
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex min-h-screen w-full bg-gray-50">
 
-        {/* Shadcn Sidebar */}
-        <Sidebar collapsible='icon' className="w-64">
+        {/* SIDEBAR */}
+        <Sidebar className="bg-white border-r">
           <SidebarContent>
-            {/* Logo */}
-            <div className="flex items-center gap-2 px-4 py-5 border-b border-slate-200">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-bold">S</span>
+
+            {/* LOGO */}
+            <div className="h-16 flex items-center gap-3 px-4 border-b">
+              <div className="w-9 h-9 bg-orange-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold">S</span>
               </div>
-              <span className="font-semibold text-slate-800">Swiggy</span>
+              <span className="font-bold text-lg">Swiggy</span>
             </div>
 
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.key}>
-                      <SidebarMenuButton
-                        isActive={activeTab === item.key}
-                        onClick={() => setActiveTab(item.key)}
-                        className={activeTab === item.key ? 'text-orange-500 bg-orange-50' : ''}
-                      >
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+          
+
+            {/* NAVIGATION */}
+            {navSections.map((sec) => (
+              <SidebarGroup key={sec.title} className="px-2 mt-3">
+                <p className="text-sm text-gray-400 px-3 mb-2">
+                  {sec.title}
+                </p>
+
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {sec.items.map((item) => (
+                      <SidebarMenuItem key={item.key}>
+                        <SidebarMenuButton
+                          onClick={() => navigate(item.path)}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg transition w-full
+                            ${
+                              location.pathname === item.path
+                                ? "bg-orange-50 text-orange-600 font-semibold"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{item.icon}</span>
+                            {item.label}
+                          </div>
+
+                          {item.badge && (
+                            <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+
+            {/* SIGN OUT BUTTON */}
+          
+
           </SidebarContent>
         </Sidebar>
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Topbar */}
-          <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-            <SidebarTrigger />
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">
-                {activeTab === 'orders' ? 'My Orders' : 'My Cart'}
-              </h1>
-              <p className="text-xs text-slate-500">
-                {activeTab === 'orders' ? 'Track and manage your orders' : 'Review your cart items'}
-              </p>
+        {/* MAIN CONTENT */}
+        <div className="flex flex-col flex-1 w-full min-w-0">
+
+          {/* HEADER */}
+          <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+            <div className="flex items-center">
+              <SidebarTrigger />
+              <div className="ml-4">
+                <h1 className="font-semibold text-lg">{meta.title}</h1>
+                <p className="text-xs text-gray-400">{meta.sub}</p>
+              </div>
             </div>
+            
+            {/* Filter button */}
+            <button className="flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">
+              <span>🔍</span>
+              Filter
+              <span>▼</span>
+            </button>
           </header>
 
-          {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6">
-            {activeTab === 'orders' && <Order />}
-            {activeTab === 'cart' && <Cart />}
+          {/* OUTLET - renders child routes */}
+          <main className="flex-1 p-6 overflow-auto">
+            <Outlet />
           </main>
-        </div>
 
+        </div>
       </div>
     </SidebarProvider>
   );

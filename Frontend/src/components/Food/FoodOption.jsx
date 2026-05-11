@@ -29,7 +29,7 @@ export default function FoodOption() {
     if (!current) return;
 
     current.addEventListener("scroll", handleScroll);
-    handleScroll(); // Initial check on mount
+    handleScroll();
 
     return () => current.removeEventListener("scroll", handleScroll);
   }, []);

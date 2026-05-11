@@ -82,11 +82,11 @@ export default function Footer() {
           <div className="flex gap-3 text-xl">
             {/* //linkden */}
             <a href="https://www.linkedin.com/company/swiggy-in/" target="_blank"
-            class="p-2 rounded-lg flex items-center border border-gray-300 justify-center transition-all duration-500 hover:border-gray-100 hover:bg-gray-100">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0077B5">
-            <path
-             d="M20.447 20.452h-3.554v-5.568c0-1.327-.027-3.037-1.849-3.037-1.853 0-2.136 1.445-2.136 2.937v5.668H9.354V9h3.413v1.561h.049c.476-.897 1.637-1.849 3.367-1.849 3.599 0 4.262 2.368 4.262 5.451v6.289zM5.337 7.433c-1.144 0-2.07-.927-2.07-2.07 0-1.144.926-2.07 2.07-2.07 1.144 0 2.07.926 2.07 2.07 0 1.143-.926 2.07-2.07 2.07zm1.777 13.019H3.56V9h3.554v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.226.792 24 1.771 24h20.451C23.2 24 24 23.226 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
-           </svg>
+              class="p-2 rounded-lg flex items-center border border-gray-300 justify-center transition-all duration-500 hover:border-gray-100 hover:bg-gray-100">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0077B5">
+                <path
+                  d="M20.447 20.452h-3.554v-5.568c0-1.327-.027-3.037-1.849-3.037-1.853 0-2.136 1.445-2.136 2.937v5.668H9.354V9h3.413v1.561h.049c.476-.897 1.637-1.849 3.367-1.849 3.599 0 4.262 2.368 4.262 5.451v6.289zM5.337 7.433c-1.144 0-2.07-.927-2.07-2.07 0-1.144.926-2.07 2.07-2.07 1.144 0 2.07.926 2.07 2.07 0 1.143-.926 2.07-2.07 2.07zm1.777 13.019H3.56V9h3.554v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.226.792 24 1.771 24h20.451C23.2 24 24 23.226 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
+              </svg>
             </a>
 
             {/* //facebook */}
@@ -144,7 +144,7 @@ export default function Footer() {
                 />
               </svg>
             </a>
-            {/* //twitter button */}
+
             <a
               href="https://x.com/Swiggy" target="_blank"
               class="p-2 rounded-lg flex items-center border border-gray-300 justify-center transition-all duration-500 hover:border-gray-100 hover:bg-gray-100"

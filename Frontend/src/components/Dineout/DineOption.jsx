@@ -4,7 +4,7 @@ import DineCard from "./DineCard";
 
 export default function DineOption() {
 
-    const scrollRef = useRef();
+  const scrollRef = useRef();
   const [buttonLeft, setButtonLeft] = useState(false);
   const [buttonRight, setButtonRight] = useState(true);
 
@@ -46,22 +46,20 @@ export default function DineOption() {
           <button
             onClick={scrollLeft}
             disabled={!buttonLeft}
-            className={`w-12 h-12 rounded-full shadow mr-4 transition-colors duration-100 ${
-              buttonLeft
+            className={`w-12 h-12 rounded-full shadow mr-4 transition-colors duration-100 ${buttonLeft
                 ? "bg-gray-600 text-white"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
+              }`}
           >
             &larr;
           </button>
           <button
             onClick={scrollRight}
             disabled={!buttonRight}
-            className={`w-12 h-12 rounded-full shadow transition-colors duration-100 ${
-              buttonRight
+            className={`w-12 h-12 rounded-full shadow transition-colors duration-100 ${buttonRight
                 ? "bg-gray-600 text-white"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
+              }`}
           >
             &rarr;
           </button>
@@ -74,10 +72,10 @@ export default function DineOption() {
         ref={scrollRef}
         className="flex flex-nowrap overflow-x-auto scrollbar-hide min-h-[409px] gap-10 scroll-smooth "
       >
-      
-        {DineData.map((data) => (
-         
-          <DineCard key={data?.info?.id} resturantdata={data} />
+
+        {DineData.map((data, index) => (
+
+          <DineCard key={`${data?.info?.id}-${index}`} resturantdata={data} />
         ))}
       </div>
     </div>

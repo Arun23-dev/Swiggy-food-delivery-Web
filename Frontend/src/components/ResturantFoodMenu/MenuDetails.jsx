@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addItem, increaseItem, decreaseItem } from "../../features/CartSlice";
 
+import { SWIGGY_IMAGE_BASE_URL_FOR_MENU } from "../../Utils/Constants"
+
 function MenuDetails({ Details }) {
 
   const dispatch = useDispatch();
@@ -19,8 +21,8 @@ function MenuDetails({ Details }) {
         itemAttribute: { vegClassifier },
         ratings
         // :{
-          // aggregatedRating
-          //  ,{ rating, ratingCountV2 }
+        // aggregatedRating
+        //  ,{ rating, ratingCountV2 }
         // },
       },
     },
@@ -35,8 +37,10 @@ function MenuDetails({ Details }) {
   const [showMore, setShowMore] = useState(false);
 
   const items = useSelector((state) => state.cart?.items)
-  const element = items?.find((data) => data.id === Details.card.info.id)
+  const element = items?.find((data) => data.swiggyItemId === Details.card.info.id)
   const count = element ? element.quantity : 0;
+
+
 
   function handleAddItem() {
 
@@ -45,9 +49,11 @@ function MenuDetails({ Details }) {
   }
   function handleIncreaseItem() {
 
+
     dispatch(increaseItem(Details.card.info))
   }
   function handleDecreaseItem() {
+    console.log(Details.card.info)
 
     dispatch(decreaseItem(Details.card.info))
   }
@@ -127,7 +133,7 @@ function MenuDetails({ Details }) {
           <div className="relative">
             {imageId ? (
               <img
-                src={`https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_300,h_300,c_fit/${imageId}`}
+                src={`${SWIGGY_IMAGE_BASE_URL_FOR_MENU}${imageId}`}
                 alt={name}
                 className="w-[156px] h-[144px] object-cover rounded-xl"
               />

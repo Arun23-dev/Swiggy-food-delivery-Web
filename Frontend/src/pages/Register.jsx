@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import useAuth  from '../hooks/useAuth';
-import { clearRedirectURL } from '@/features/RedirectSlice';
 import { useDispatch ,useSelector} from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router';
 
@@ -43,15 +42,12 @@ const Register = () => {
         password: formData.password,
       });
 
-      if (result) {
-
-        console.log(result)
         if (result) {
           const url = redirectURL || '/'
-          console.log(url);
-          navigate(url);
-          dispatch(clearRedirectURL());
-        }
+        
+          navigate(url,{replace:true});
+         
+        
       }
       else {
 

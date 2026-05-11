@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export default function BestPlacesToEat({ BestPlacesData }) {
- 
+
   const [dataShow, setDataShow] = useState(11);
   const title = BestPlacesData?.title || "";
   const brands = BestPlacesData?.brands || [];
@@ -15,7 +15,7 @@ export default function BestPlacesToEat({ BestPlacesData }) {
 
         <div className="flex  flex-wrap  gap-4">
           {brands.slice(0, dataShow).map((item, idx) => (
-            <a href={item.link} key={`${item.text}-${idx}`}>  
+            <a href={item.link} key={`${item.text}-${idx}`}>
               <div className="h-[71px] min-w-[231px] border-solid border-[1.5px] border-[#02060c26] rounded-xl p-4 flex items-center justify-center text-center">
                 <div className="min-h-[36px] max-w-[194px] text-[14px] flex items-center">
                   {item.text}

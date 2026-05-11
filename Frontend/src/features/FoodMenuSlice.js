@@ -7,13 +7,13 @@ import { saveToCache, getFromCache } from "@/Utils/CacheManager";
 export const fetchFoodMenu = createAsyncThunk(
     'foodMenu/fetchFoodMenu',
     async (restaurantId, { rejectWithValue }) => {
-        const CACHE_URL = `/api/restaurants${restaurantId}`;
+        const CACHE_URL = `/api/restaurants/${restaurantId}`;
 
         try {
 
             const cachedData = await getFromCache(CACHE_URL);
             if (cachedData) {
-                console.log('✅ Returning cached restaurant data');
+            
                 return { restaurantId, data: cachedData };
             }
 

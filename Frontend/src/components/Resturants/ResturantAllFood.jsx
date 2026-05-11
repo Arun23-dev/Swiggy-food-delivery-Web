@@ -1,38 +1,116 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback,useEffect, useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router";
-import { loadMoreRestaurants } from '../../features/ResturantSlice';  // ← IMPORT THIS!
+import { loadMoreRestaurants } from '../../features/ResturantSlice';
+import FilterRestaurant from "./FilterRestaurant";
+import {SWIGGY_IMAGE_BASE_URL_FOR_DINE} from "../../Utils/Constants";
 
 export default function RestuarnatAllFood({ CategoryWise }) {
-    const { allRestaurants, hasMore, loadingMore, offset, loadMoreError } = useSelector((state) => state.resturant);  // ← Use offset, not nextOffset!
+    const { allRestaurants, hasMore, offset } = useSelector((state) => state.resturant);  // ← Use offset, not nextOffset!
     const dispatch = useDispatch();
     const observerRef = useRef();
+    const isLoadingRef = useRef(false);
+
+    const [sortBy, setSortBy] = useState("relevance");
+    const [activeFilter, setActiveFilter] = useState([]);
+    function toggleFilter(filter) {
+        setActiveFilter(prev => prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev, filter])
+
+    }
+    const sortedRestaurants = useMemo(() => {
+        let result = [...(allRestaurants ?? [])];
+
+        // ✅ Apply filters first
+        if (activeFilter.includes("rating_4")) {
+            result = result.filter(r => (r?.info?.avgRating ?? 0) >= 4.0);
+        }
+
+
+        if (activeFilter.includes("less_300")) {
+            result = result.filter(r => {
+                const costStr = r?.info?.costForTwo ?? "";
+                const cost = Number(costStr.replace(/[^\d]/g, ""));
+                return cost <= 300;
+            });
+        }
+    
+        if (activeFilter.includes("300_600")) {
+            result = result.filter(r => {
+                const costStr = r?.info?.costForTwo ?? "";
+                const cost = Number(costStr.replace(/[^\d]/g, ""));
+                return cost >= 300 && cost <= 600;
+            });
+        }
+      
+        if (activeFilter.includes("pure_veg")) {
+            result = result.filter(r => r?.info?.veg === true);
+        }
+
+        if (activeFilter.includes("offers")) {
+            result = result.filter(r => r?.info?.aggregatedDiscountInfoV3?.header);
+        }
+
+        result.sort((a, b) => {
+            switch (sortBy) {
+                case "delivery":
+                    return (a?.info?.sla?.deliveryTime ?? 0) - (b?.info?.sla?.deliveryTime ?? 0);
+                case "rating":
+                    return (b?.info?.avgRating ?? 0) - (a?.info?.avgRating ?? 0);
+                case "low_to_high":
+                    return (a?.info?.costForTwo ?? 0) - (b?.info?.costForTwo ?? 0);
+                case "high_to_low":
+                    return (b?.info?.costForTwo ?? 0) - (a?.info?.costForTwo ?? 0);
+                default:
+                    return 0;
+            }
+        });
+
+        return result;
+    }, [allRestaurants, sortBy, activeFilter]); 
 
     const loadMore = useCallback(() => {
-        if (loadingMore || !hasMore) return;
-        console.log("Loading more, current offset:", offset);
-        dispatch(loadMoreRestaurants({ offset: offset }));  // ← Pass offset
-    }, [loadingMore, hasMore, offset, dispatch]);
+    if (isLoadingRef.current || !hasMore) return;
+    isLoadingRef.current = true;
+    dispatch(loadMoreRestaurants({ offset }))
+        .finally(() => {
+            isLoadingRef.current = false;
+        });
+}, [hasMore, offset, dispatch]);
 
-    const lastItemRef = useCallback((node) => {
-        if (loadingMore) return;
-        if (observerRef.current) observerRef.current.disconnect();
-        
-        observerRef.current = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && hasMore) {
-                loadMore();
-            }
-        }, { rootMargin: '100px' });
-        
-        if (node) observerRef.current.observe(node);
-    }, [loadingMore, hasMore, loadMore]);
+const lastItemRef = useCallback((node) => {
+    if (observerRef.current) observerRef.current.disconnect();
+    if (!node) return;
+
+    const rect = node.getBoundingClientRect();
+    const isAlreadyVisible = rect.top < window.innerHeight;
+    if (isAlreadyVisible) return;
+
+    observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+            loadMore();
+        }
+    }, { rootMargin: '200px', threshold: 0 });
+
+    observerRef.current.observe(node);
+}, [hasMore, loadMore]);
+
+
+
 
     return (
         <div className="max-w-[80%] min-w-[80%] justify-center mx-auto container">
+
             <div className="text-2xl font-bold">
                 <h2>Restaurant with online food delivery</h2>
             </div>
+            <div>
+                <FilterRestaurant
+                    onSortChange={(val) => setSortBy(val)}
+                    onFilterChange={toggleFilter}        
+                    activeFilter={activeFilter} />
 
+
+            </div>
             {/* Category Filters */}
             <div className="flex gap-3 rounded-2xl shadow-orange-100 border-amber-50 justify-center overflow-x-auto">
                 {CategoryWise?.filter(
@@ -46,8 +124,8 @@ export default function RestuarnatAllFood({ CategoryWise }) {
 
             {/* Restaurant Grid */}
             <div className="mt-5 gap-8 justify-center flex flex-wrap">
-                {allRestaurants?.map((data, index) => {
-                    const isLastItem = index === allRestaurants.length - 1;
+                {sortedRestaurants?.map((data, index) => {
+                    const isLastItem = index === sortedRestaurants.length - 1;
                     return (
                         <Link
                             ref={isLastItem ? lastItemRef : null}
@@ -59,7 +137,7 @@ export default function RestuarnatAllFood({ CategoryWise }) {
                             <div className="relative">
                                 <img
                                     className="h-[190px] min-[190px]1 min-w-[273px] w-[273px] rounded-xl object-cover"
-                                    src={`https://media-assets.swiggy.com/swiggy/image/upload/${data?.info?.cloudinaryImageId}`}
+                                    src={`${SWIGGY_IMAGE_BASE_URL_FOR_DINE}${data?.info?.cloudinaryImageId}`}
                                     alt={data?.info?.name ?? "Food Image"}
                                 />
                                 <div className="absolute bottom-0 left-0 w-full h-[70px] font-extrabold z-10 bg-gradient-to-t from-black/70 to-transparent rounded-b-xl px-3 flex items-end pb-2 text-white text-[20px]">
@@ -104,28 +182,7 @@ export default function RestuarnatAllFood({ CategoryWise }) {
                 })}
             </div>
 
-            {/* Loading & End States */}
-            {loadingMore && (
-                <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                    <p className="mt-2">Loading more restaurants...</p>
-                </div>
-            )}
-            
-            {loadMoreError && (
-                <div className="text-center py-4 text-red-500">
-                    Error: {loadMoreError.message}
-                    <button onClick={loadMore} className="ml-2 px-3 py-1 bg-blue-500 text-white rounded">
-                        Retry
-                    </button>
-                </div>
-            )}
-            
-            {!hasMore && allRestaurants.length > 0 && (
-                <div className="text-center py-8 text-gray-500 border-t mt-8">
-                    🎉 You've seen all {allRestaurants.length} restaurants!
-                </div>
-            )}
-        </div>
+        
+        </div >
     );
 }

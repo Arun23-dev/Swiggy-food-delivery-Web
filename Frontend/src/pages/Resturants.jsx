@@ -4,8 +4,7 @@ import Footer from "../components/Footer/Footer";
 function Resturants() {
   return (
     <div>
-   
-      <ResturantDataFetch></ResturantDataFetch>  
+      <ResturantDataFetch></ResturantDataFetch>
       <Footer></Footer>
     </div>
   );

@@ -33,11 +33,11 @@ const Login = () => {
       const userId = result.user._id || result.user.id;
 
       const url = redirectURL || '/';
-      navigate(url);
-      dispatch(clearRedirectURL());
+      navigate(url,{replace:true});
+      
 
       if (userId) {
-        await dispatch(syncCartAfterLogin(userId));
+          await dispatch(syncCartAfterLogin({syncType: "addmerge"} ));
      
       } 
       else {

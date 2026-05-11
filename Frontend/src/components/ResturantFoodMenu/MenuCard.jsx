@@ -56,8 +56,8 @@ export default function MenuCard({ data, dropState, selected, bestSeller }) {
             data={category}
             dropState={false}
             key={category.title}
-            selected={selected}       
-            bestSeller={bestSeller}    
+            selected={selected}
+            bestSeller={bestSeller}
           />
         ))}
       </div>

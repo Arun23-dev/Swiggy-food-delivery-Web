@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 function ResturantFoodMenu() {
   const [bestSeller, setBestSeller] = useState(false);
 
-  const [selected, setSelected] = useState(null); // null | 'veg' | 'nonveg'
+  const [selected, setSelected] = useState(null);
 
   const { restaurantId } = useParams();
 
@@ -33,7 +33,6 @@ function ResturantFoodMenu() {
     );
   });
 
-
   if (loading || !cache[restaurantId])
     return (
       <div>
@@ -43,7 +42,6 @@ function ResturantFoodMenu() {
 
   return (
     <div className="flex flex-col mt-[100px] max-w-[70%] container mx-auto  px-4">
-
       {/* Search Menu */}
       <div className="flex flex-col items-center gap-6 py-8 px-4">
         {/* MENU heading with ornaments */}
@@ -55,25 +53,13 @@ function ResturantFoodMenu() {
               strokeWidth="1.2"
               strokeLinecap="round"
             />
-            <circle
-              cx="28"
-              cy="5"
-              r="2.5"
-              stroke="#9ca3af"
-              strokeWidth="1.2"
-            />
+            <circle cx="28" cy="5" r="2.5" stroke="#9ca3af" strokeWidth="1.2" />
           </svg>
           <span className="text-gray-400 tracking-[0.22em] text-sm">
             M E N U
           </span>
           <svg width="38" height="10" viewBox="0 0 38 10" fill="none">
-            <circle
-              cx="10"
-              cy="5"
-              r="2.5"
-              stroke="#9ca3af"
-              strokeWidth="1.2"
-            />
+            <circle cx="10" cy="5" r="2.5" stroke="#9ca3af" strokeWidth="1.2" />
             <path
               d="M12 5 Q18 1 24 5 Q30 9 36 5"
               stroke="#9ca3af"
@@ -121,11 +107,7 @@ rounded-full px-3 py-1.5 cursor-pointer select-none
 
 hover:border-gray-300 transition-colors"
           >
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center
-
-bg-green-50 border border-green-200"
-            >
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-green-50 border border-green-200">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <rect
                   x="1"
@@ -159,9 +141,7 @@ ${selected === "veg" ? "translate-x-[14px]" : "translate-x-0"}`}
           {/* — Red (Non-Veg) toggle — */}
 
           <div
-            onClick={() =>
-              setSelected(selected === "nonveg" ? null : "nonveg")
-            }
+            onClick={() => setSelected(selected === "nonveg" ? null : "nonveg")}
             className="flex items-center gap-2 bg-gray-100 border border-gray-200
 
 rounded-full px-3 py-1.5 cursor-pointer select-none
@@ -228,9 +208,7 @@ ${bestSeller
                   e.stopPropagation();
                   setBestSeller(false);
                 }}
-                className="w-4 h-4 rounded-full flex items-center justify-center
-
-hover:bg-orange-200 transition-colors"
+                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors"
               >
                 <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
                   <path
@@ -246,10 +224,15 @@ hover:bg-orange-200 transition-colors"
         </div>
       </div>
 
-
       <div>
         {menuData.map(({ card: { card } }, index) => (
-          <MenuCard data={card} dropState={true} selected={selected} bestSeller={bestSeller} key={index} />
+          <MenuCard
+            data={card}
+            dropState={true}
+            selected={selected}
+            bestSeller={bestSeller}
+            key={index}
+          />
         ))}
       </div>
     </div>
