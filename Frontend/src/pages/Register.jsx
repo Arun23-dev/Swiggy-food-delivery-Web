@@ -1,59 +1,60 @@
-import React, { useState } from 'react';
-import useAuth  from '../hooks/useAuth';
-import { useDispatch ,useSelector} from 'react-redux';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from "zod";
+import useAuth from '../hooks/useAuth';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router';
 
-const Register = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+// Fixed Zod schema
+
+const userRegisterSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.email('Invalid email address').toLowerCase().trim(),
+  password: z.string()
+  .min(8, 'The password must be at least 8 characters long')
+  .max(32, 'The password must be a maximun 32 characters')
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*-])[A-Za-z\d!@#$%&*-]{8,}$/),
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'] // This should match the field name
+});
+
+function Register() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm({
+    resolver: zodResolver(userRegisterSchema), // Add the resolver here
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    }
   });
-  const [passwordError, setPasswordError] = useState('');
-  const { register, loading, error } = useAuth();
+
+  const { register: registerUser, loading, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
 
+  const redirectURL = useSelector((state) => state.redirect.redirectURL);
 
-  const redirectURL=useSelector((state)=>state.redirect.redirectURL)
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (e.target.name === 'confirmPassword') {
-      setPasswordError('');
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setPasswordError('Passwords do not match');
-      return;
-    }
-
+  const onSubmit = async (data) => {
     try {
-      const result = await register({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
+      const result = await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
       });
 
-        if (result) {
-          const url = redirectURL || '/'
-        
-          navigate(url,{replace:true});
-         
-        
-      }
-      else {
-
-        navigate()
-
-
+      if (result) {
+        const url = redirectURL || '/';
+        navigate(url, { replace: true });
       }
     } catch (err) {
       // Error is handled by auth slice
@@ -82,7 +83,7 @@ const Register = () => {
         </div>
 
         {/* Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             {/* Name Field */}
             <div>
@@ -97,16 +98,18 @@ const Register = () => {
                 </div>
                 <input
                   id="name"
-                  name="name"
                   type="text"
                   autoComplete="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border ${
+                    errors.name ? 'border-red-500' : 'border-gray-300'
+                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                   placeholder="John Doe"
+                  {...register('name')}
                 />
               </div>
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              )}
             </div>
 
             {/* Email Field */}
@@ -122,16 +125,18 @@ const Register = () => {
                 </div>
                 <input
                   id="email"
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                   placeholder="you@example.com"
+                  {...register('email')}
                 />
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              )}
             </div>
 
             {/* Password Field */}
@@ -147,16 +152,18 @@ const Register = () => {
                 </div>
                 <input
                   id="password"
-                  name="password"
                   type="password"
                   autoComplete="new-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                   placeholder="••••••••"
+                  {...register('password')}
                 />
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              )}
             </div>
 
             {/* Confirm Password Field */}
@@ -172,18 +179,17 @@ const Register = () => {
                 </div>
                 <input
                   id="confirmPassword"
-                  name="confirmPassword"
                   type="password"
                   autoComplete="new-password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 pr-3 py-2 border ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                   placeholder="••••••••"
+                  {...register('confirmPassword')}
                 />
               </div>
-              {passwordError && (
-                <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
               )}
             </div>
           </div>
@@ -209,23 +215,7 @@ const Register = () => {
             </button>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    {error.message || 'Registration failed. Please try again.'}
-                  </h3>
-                </div>
-              </div>
-            </div>
-          )}
+     
 
           {/* Terms and Conditions */}
           <p className="text-xs text-center text-gray-500">
@@ -238,6 +228,6 @@ const Register = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Register;
