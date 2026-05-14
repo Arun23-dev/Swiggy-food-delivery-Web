@@ -2,14 +2,13 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import {
-  ShoppingCart, ShoppingBag, CreditCard, TrendingUp,
-  CheckCircle, Clock, XCircle, ChevronRight,
-  Package, Zap, Truck, Star,
-} from 'lucide-react';
-import { getMyOrders } from '../features/OrderSlice';
+import { ShoppingCart, ShoppingBag, CreditCard, TrendingUp, CheckCircle, Clock, XCircle, ChevronRight, Package, Zap, Truck, Star, } from 'lucide-react';
+import { getMyOrders } from '../slices/OrderSlice';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+
+import { SWIGGY_IMAGE_BASE_URL } from '../Utils/Constants'
+
 
 const SWIGGY_BASE_URL = "https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_300,h_200,c_fit/";
 
@@ -49,9 +48,9 @@ const SectionHeader = ({ title, label, onClick }) => (
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const map = {
-    placed:    'bg-gray-100 text-gray-600',
+    placed: 'bg-gray-100 text-gray-600',
     preparing: 'bg-yellow-100 text-yellow-700',
-    pickedup:  'bg-orange-100 text-orange-700',
+    pickedup: 'bg-orange-100 text-orange-700',
     delivered: 'bg-green-100 text-green-700',
     cancelled: 'bg-red-100 text-red-600',
   };
@@ -64,12 +63,14 @@ const StatusBadge = ({ status }) => {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const dispatch  = useDispatch();
-  const navigate  = useNavigate();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const { items, count }      = useSelector((state) => state.cart);
-  const { orders, loading }   = useSelector((state) => state.order);
+  const { items, count } = useSelector((state) => state.cart);
+  const { orders, loading } = useSelector((state) => state.order);
   const { user, isAuthenticated } = useSelector((state) => state.user);
+
+
 
   useEffect(() => {
     if (isAuthenticated) dispatch(getMyOrders());
@@ -81,18 +82,20 @@ export default function Dashboard() {
     0
   );
   const cartDelivery = cartSubtotal >= 500 ? 0 : (items.length > 0 ? 30 : 0);
-  const cartTotal    = cartSubtotal + cartDelivery;
+  const cartTotal = cartSubtotal + cartDelivery;
 
-  const totalOrders     = orders.length;
-  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
-  const activeOrders    = orders.filter(o => ['placed','preparing','pickedup'].includes(o.status)).length;
-  const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
-  const totalSpent      = orders
+  const totalOrders = orders?.length;
+  const deliveredOrders = orders?.filter(o => o.status === 'delivered')?.length;
+  const activeOrders = orders?.filter(o => ['placed', 'preparing', 'pickedup'].includes(o.status)).length;
+  const cancelledOrders = orders?.filter(o => o.status === 'cancelled').length;
+  const totalSpent = orders
     .filter(o => o.status === 'delivered')
     .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
-  const recentOrders  = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
-  const recentItems   = items.slice(0, 3);
+  const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
+
+  console.log(recentOrders);
+  const recentItems = items.slice(0, 3);
 
   // ── Top KPIs ────────────────────────────────────────────────────────────────
   const kpis = [
@@ -103,7 +106,7 @@ export default function Dashboard() {
       icon: ShoppingCart,
       border: 'border-orange-500',
       text: 'text-orange-600',
-      onClick: () => navigate('/cart'),
+
     },
     {
       title: 'Total Orders',
@@ -112,7 +115,7 @@ export default function Dashboard() {
       icon: ShoppingBag,
       border: 'border-blue-500',
       text: 'text-blue-600',
-      onClick: () => navigate('/orders'),
+
     },
     {
       title: 'Active Orders',
@@ -121,7 +124,7 @@ export default function Dashboard() {
       icon: Clock,
       border: 'border-yellow-500',
       text: 'text-yellow-600',
-      onClick: () => navigate('/orders'),
+
     },
     {
       title: 'Total Spent',
@@ -130,7 +133,7 @@ export default function Dashboard() {
       icon: TrendingUp,
       border: 'border-green-500',
       text: 'text-green-600',
-      onClick: () => navigate('/orders'),
+
     },
   ];
 
@@ -163,15 +166,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
         {[
           { label: 'Delivered', value: deliveredOrders, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: 'Pending',   value: activeOrders,    icon: Clock,        color: 'text-yellow-600', bg: 'bg-yellow-50' },
-          { label: 'Cancelled', value: cancelledOrders, icon: XCircle,      color: 'text-red-500',   bg: 'bg-red-50' },
+          { label: 'Pending', value: activeOrders, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+          { label: 'Cancelled', value: cancelledOrders, icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
         ].map(({ label, value, icon: Icon, color, bg }, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 + i * 0.07 }}
-            onClick={() => navigate('/orders')}
             className={`${bg} rounded-2xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md transition`}
           >
             <div className={`w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm`}>
@@ -196,7 +198,8 @@ export default function Dashboard() {
           className="bg-white rounded-2xl shadow-sm overflow-hidden"
         >
           <div className="p-5 border-b border-gray-100">
-            <SectionHeader title="Your Cart" label="View Cart" onClick={() => navigate('/cart')} />
+            <SectionHeader title="Your Cart"
+            />
           </div>
 
           {items.length === 0 ? (
@@ -206,7 +209,7 @@ export default function Dashboard() {
               </div>
               <p className="text-gray-500 text-sm mb-3">Your cart is empty</p>
               <Button
-                onClick={() => navigate('/')}
+
                 size="sm"
                 className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
               >
@@ -220,14 +223,14 @@ export default function Dashboard() {
                   <img
                     src={`${SWIGGY_BASE_URL}${item.image}`}
                     alt={item.name}
-                    className="w-12 h-12 rounded-xl object-cover bg-gray-100"
+                    className="w-20 h-20 rounded-xl object-cover bg-gray-100"
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-gray-800 truncate">{item.name}</p>
-                    <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                    <p className="text-xs font-semibold text-gray-400">Qty: {item.quantity}</p>
                   </div>
-                  <p className="text-sm font-bold text-gray-700 shrink-0">
+                  <p className="text-xl font-bold text-gray-700 shrink-0">
                     ₹{Math.floor((item.defaultPrice || item.price || 0) / 100) * item.quantity}
                   </p>
                 </div>
@@ -242,10 +245,11 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-400">Total</p>
                   <p className="font-bold text-orange-500 text-lg">₹{cartTotal}</p>
                 </div>
-                <Button
-                  onClick={() => navigate('/checkout')}
-                  className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
-                >
+                <Button className="bg-orange-400 hover:bg-orange-600 text-white w-80 py-8  text-lg font-bold rounded-xl"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/checkout');
+                  }} >
                   Checkout
                 </Button>
               </div>
@@ -261,7 +265,17 @@ export default function Dashboard() {
           className="bg-white rounded-2xl shadow-sm overflow-hidden"
         >
           <div className="p-5 border-b border-gray-100">
-            <SectionHeader title="Recent Orders" label="All Orders" onClick={() => navigate('/orders')} />
+            <SectionHeader
+              title="Recent Orders"
+              label={
+                <button
+                  onClick={() => navigate("/dashboard/orders")}
+                  className="text-orange-500 text-sm font-medium hover:underline"
+                >
+                  All Orders
+                </button>
+              }
+            />
           </div>
 
           {loading ? (
@@ -280,23 +294,35 @@ export default function Dashboard() {
               {recentOrders.map((order) => (
                 <div
                   key={order._id}
-                  onClick={() => navigate('/orders')}
                   className="p-4 hover:bg-gray-50 transition cursor-pointer"
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="font-semibold text-sm text-gray-800">
-                      Order #{order._id.slice(-6)}
-                    </p>
-                    <StatusBadge status={order.status} />
-                  </div>
-                  <p className="text-xs text-gray-400 mb-1">
-                    {new Date(order.createdAt).toLocaleString()}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500">
-                      {order.items?.length} item{order.items?.length !== 1 ? 's' : ''}
-                    </p>
-                    <p className="font-bold text-sm text-orange-500">₹{order.totalAmount}</p>
+                  <div className="flex gap-3">
+                    {/* Image */}
+                    <img
+                      src={`${SWIGGY_IMAGE_BASE_URL}/${order.items?.[0]?.image}`}
+                      alt={order.items?.[0]?.name}
+                      className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-semibold text-sm text-gray-800">
+                          Order #{order._id.slice(-6)}
+                        </p>
+                        <StatusBadge status={order.status} />
+                      </div>
+                      <p className="text-xs text-gray-400 mb-1">
+                        {new Date(order.createdAt).toLocaleString()}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-500">
+                          {order.items?.length} item{order.items?.length !== 1 ? 's' : ''}
+                        </p>
+                        <p className="font-bold text-sm text-orange-500">₹{order.totalAmount}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -305,52 +331,13 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* Payment summary strip */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-2xl p-6 text-white"
-      >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-              <CreditCard className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-lg">Ready to checkout?</p>
-              <p className="text-orange-100 text-sm">
-                {items.length > 0
-                  ? `${count} item${count !== 1 ? 's' : ''} worth ₹${cartTotal} in your cart`
-                  : 'Add items to your cart to get started'}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => navigate('/cart')}
-              className="bg-white/20 hover:bg-white/30 text-white border-0 rounded-xl"
-              variant="outline"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" /> Cart
-            </Button>
-            <Button
-              onClick={() => navigate('/checkout')}
-              disabled={items.length === 0}
-              className="bg-white text-orange-500 hover:bg-orange-50 rounded-xl font-bold"
-            >
-              Pay Now <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Feature highlights */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-6">
         {[
-          { icon: Zap,     title: 'Fast Delivery',   desc: 'Average 25-30 min delivery time',  color: 'text-yellow-500', bg: 'bg-yellow-50' },
-          { icon: Star,    title: 'Top Rated',        desc: 'Restaurants curated for quality',  color: 'text-orange-500', bg: 'bg-orange-50' },
-          { icon: Package, title: 'Order Tracking',  desc: 'Live updates on every order',      color: 'text-blue-500',   bg: 'bg-blue-50'   },
+          { icon: Zap, title: 'Fast Delivery', desc: 'Average 25-30 min delivery time', color: 'text-yellow-500', bg: 'bg-yellow-50' },
+          { icon: Star, title: 'Top Rated', desc: 'Restaurants curated for quality', color: 'text-orange-500', bg: 'bg-orange-50' },
+          { icon: Package, title: 'Order Tracking', desc: 'Live updates on every order', color: 'text-blue-500', bg: 'bg-blue-50' },
         ].map(({ icon: Icon, title, desc, color, bg }, i) => (
           <motion.div
             key={i}
