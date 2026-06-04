@@ -1,5 +1,5 @@
 
-import ResturantDataFetch from "../components/Resturants/ResturantDataFetch";
+import ResturantDataFetch from "../components/Resturants/RestaurantDataFetch";
 import Footer from "../components/Footer/Footer";
 function Resturants() {
   return (

@@ -1,10 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit'
-import cartReducer from '../features/CartSlice'
-import resturantReducer from '../features/ResturantSlice'
-import foodMenduReducer from "../features/FoodMenuSlice";
-import userReducer from "../features/UserSlice"
-import reDirect from "../features/RedirectSlice"
-import orderReducer from "../features/OrderSlice"
+import cartReducer from '../slices/CartSlice'
+import resturantReducer from '../slices/ResturantSlice'
+import foodMenduReducer from "../slices/FoodMenuSlice";
+import userReducer from "../slices/UserSlice"
+import reDirect from "../slices/RedirectSlice"
+import orderReducer from "../slices/OrderSlice"
 
 export default configureStore({
     reducer:{

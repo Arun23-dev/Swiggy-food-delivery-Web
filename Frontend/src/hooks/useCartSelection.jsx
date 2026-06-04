@@ -1,78 +1,107 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { DELIVERY_FEE, FREE_DELIVERY_THRESHOLD } from '../Utils/Constants';
+// hooks/useCartSelection.js
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { DELIVERY_FEE, FREE_DELIVERY_THRESHOLD } from "../Utils/Constants";
 
-export const useCartSelection = (cartItems) => {
-    // Store selected item IDs
-    const [selectedItemIds, setSelectedItemIds] = useState(new Set());
+export const useCartSelection = (restaurants = []) => {
+    // Flatten all items with restaurant info
+    const cartItems = useMemo(() => {
+        if (!Array.isArray(restaurants)) return [];
+        return restaurants.flatMap((restaurant) =>
+            (restaurant.items || []).map((item) => ({
+                ...item,
+                restaurantId: restaurant.restaurantId,
+                restaurantName: restaurant.restaurantName,
+                city: restaurant.city,
+                locality: restaurant.locality,
+            }))
+        );
+    }, [restaurants]);
 
+    const [selectedItemKeys, setSelectedItemKeys] = useState(new Set());
 
-    // AUTO-SELECT ALL when cart is not empty and nothing is selected (first load)
+    const getItemKey = useCallback(
+        (item) => `${item.restaurantId}_${item.swiggyItemId}`,
+        []
+    );
+
+    // Auto-select all on first load
     useEffect(() => {
-        if (cartItems.length > 0 && selectedItemIds.size === 0) {
-            const allIds = cartItems.map(item => item.swiggyItemId);
-            setSelectedItemIds(new Set(allIds));
-        }
-    }, [cartItems, selectedItemIds.size]);
+        if (cartItems.length === 0) return;
+        setSelectedItemKeys((prev) => (prev.size > 0 ? prev : new Set(cartItems.map(getItemKey))));
+    }, [cartItems, getItemKey]);
 
-    // Keep selection in sync when cart changes (e.g., item removed)
+    // Remove keys that no longer exist
     useEffect(() => {
-        const existingIds = new Set(cartItems.map(item => item.swiggyItemId));
-        setSelectedItemIds(prev => new Set([...prev].filter(id => existingIds.has(id))));
-    }, [cartItems]);
+        const existingKeys = new Set(cartItems.map(getItemKey));
+        setSelectedItemKeys((prev) => {
+            const filtered = new Set([...prev].filter((k) => existingKeys.has(k)));
+            return filtered.size === prev.size ? prev : filtered;
+        });
+    }, [cartItems, getItemKey]);
 
-    // Derived: selected items array
-    const selectedCartItems = useMemo(() => {
-        return cartItems.filter(item => selectedItemIds.has(item.swiggyItemId));
-    }, [cartItems, selectedItemIds]);
+    const selectedCartItems = useMemo(
+        () => cartItems.filter((item) => selectedItemKeys.has(getItemKey(item))),
+        [cartItems, selectedItemKeys, getItemKey]
+    );
 
-    // Derived: totals based only on selected items
-    const selectedItemTotal = useMemo(() => {
-        return selectedCartItems.reduce((sum, item) => {
-            const priceInRupees = Math.floor((item.defaultPrice || item.price || 0) / 100);
-            return sum + (priceInRupees * item.quantity);
-        }, 0);
-    }, [selectedCartItems]);
+    const selectedItemTotal = useMemo(
+        () =>
+            selectedCartItems.reduce(
+                (sum, item) => sum + Math.floor((item.defaultPrice || item.price || 0) / 100) * item.quantity,
+                0
+            ),
+        [selectedCartItems]
+    );
 
     const selectedDeliveryFee = selectedItemTotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
     const selectedTotal = selectedItemTotal + selectedDeliveryFee;
 
-    // Toggle single item
-    const toggleSelectItem = useCallback((itemId) => {
-        setSelectedItemIds(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(itemId)) {
-                newSet.delete(itemId);
-            } else {
-                newSet.add(itemId);
-            }
-            return newSet;
+    const toggleSelectItem = useCallback((itemKey) => {
+        setSelectedItemKeys((prev) => {
+            const next = new Set(prev);
+            next.has(itemKey) ? next.delete(itemKey) : next.add(itemKey);
+            return next;
         });
     }, []);
 
-    // Select / deselect all
     const selectAll = useCallback(() => {
-        if (selectedItemIds.size === cartItems.length && cartItems.length > 0) {
-            setSelectedItemIds(new Set());
-        } else {
-            setSelectedItemIds(new Set(cartItems.map(item => item.swiggyItemId)));
-        }
-    }, [cartItems, selectedItemIds.size]);
+        setSelectedItemKeys((prev) =>
+            prev.size === cartItems.length ? new Set() : new Set(cartItems.map(getItemKey))
+        );
+    }, [cartItems, getItemKey]);
 
-    // Check if all are selected
-    const isAllSelected = cartItems.length > 0 && selectedItemIds.size === cartItems.length;
+    const isAllSelected = cartItems.length > 0 && selectedItemKeys.size === cartItems.length;
 
-    // Remove a specific ID from selection (e.g., when item deleted)
-    const removeFromSelection = useCallback((itemId) => {
-        setSelectedItemIds(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(itemId);
-            return newSet;
+    const removeFromSelection = useCallback((itemKey) => {
+        setSelectedItemKeys((prev) => {
+            const next = new Set(prev);
+            next.delete(itemKey);
+            return next;
         });
     }, []);
+
+    // ✅ The key part: group selected items into restaurants array (matches backend schema)
+    const groupedSelectedRestaurants = useMemo(
+        () =>
+            restaurants
+                .map((restaurant) => ({
+                    restaurantId: restaurant.restaurantId,
+                    restaurantName: restaurant.restaurantName,
+                    city: restaurant.city,
+                    locality: restaurant.locality,
+                    items: restaurant.items.filter((item) =>
+                        selectedItemKeys.has(`${restaurant.restaurantId}_${item.swiggyItemId}`)
+                    ),
+                }))
+                .filter((r) => r.items.length > 0),
+        [restaurants, selectedItemKeys]
+    );
 
     return {
-        selectedItemIds,
+        cartItems,
+        selectedItemKeys,
         selectedCartItems,
+        groupedSelectedRestaurants,
         selectedItemTotal,
         selectedDeliveryFee,
         selectedTotal,
@@ -80,6 +109,6 @@ export const useCartSelection = (cartItems) => {
         selectAll,
         isAllSelected,
         removeFromSelection,
-        setSelectedItemIds, // expose if needed externally
+        setSelectedItemKeys,
     };
 };

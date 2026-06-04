@@ -1,11 +1,11 @@
 // hooks/useAuth.js
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { loginUser, registerUser, logoutUser, checkAuth } from '../features/UserSlice';
-import { setRedirectURL } from '../features/RedirectSlice';
+import { loginUser, registerUser, logoutUser, checkAuth } from '../slices/UserSlice';
+import { setRedirectURL } from '../slices/RedirectSlice';
 import { useLocation, useNavigate } from 'react-router'; // Fixed import
 import { toast } from 'react-hot-toast';
-import { clearCart } from '@/features/CartSlice';
+import { clearCart } from '@/slices/CartSlice';
 
 export default function useAuth(customButton = null) {
   const location = useLocation();
@@ -73,7 +73,7 @@ export default function useAuth(customButton = null) {
 
       toast.success('Logged out successfully');
       setShowDropdown(false);
-      navigate(location.pathname);
+      navigate('/');
       await dispatch(clearCart());
     } catch (err) {
       toast.error('Logout failed');
@@ -105,7 +105,7 @@ export default function useAuth(customButton = null) {
     if (user?.emailId || user?.email) {
       return (user?.emailId || user?.email).charAt(0).toUpperCase();
     }
-    return 'U';
+    return;
   };
 
   // UserProfile component defined inside useAuth to access closure variables
@@ -175,7 +175,7 @@ export default function useAuth(customButton = null) {
             <MenuItem
               icon="👤"
               label="Profile Settings"
-              onClick={() => handleNavigation('/profile')}
+              onClick={() => handleNavigation('/dashboard/profile')}
             />
             <hr className="my-2 border-gray-100" />
 

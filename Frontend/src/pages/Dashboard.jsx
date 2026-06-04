@@ -59,7 +59,7 @@ export default function Dashboard() {
 
   // Get cart restaurants from Redux
   const { restaurants } = useSelector((state) => state.cart);
-  const { orders, loading } = useSelector((state) => state.order);
+  const { orders, loading, ordersFetched } = useSelector((state) => state.order);
   const { user, isAuthenticated } = useSelector((state) => state.user);
 
   // Use the cart selection hook to flatten items and get totals
@@ -78,22 +78,26 @@ export default function Dashboard() {
 
   // Safe orders handling
   const safeOrders = Array.isArray(orders) ? orders : [];
-  const totalOrders = safeOrders?.length;                    // ✅ defined here
+  const totalOrders = safeOrders?.length;                  
   const deliveredOrders = safeOrders?.filter(o => o && o.status === 'delivered').length;
   const activeOrders = safeOrders?.filter(o => o && ['placed', 'preparing', 'pickedup'].includes(o.status)).length;
   const cancelledOrders = safeOrders?.filter(o => o && o.status === 'cancelled').length;
   const totalSpent = safeOrders
     .filter(o => o && o.status === 'delivered')
     .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-  
+
   const recentOrders = [...safeOrders]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4);
   const recentItems = cartItems.slice(0, 3);
 
+ 
   useEffect(() => {
-    if (isAuthenticated) dispatch(getMyOrders());
-  }, [dispatch, isAuthenticated]);
+    if (isAuthenticated &&  !ordersFetched && !loading) {
+        dispatch(getMyOrders());
+      
+    }
+  }, [isAuthenticated, ordersFetched]);
 
   const kpis = [
     {
@@ -187,7 +191,7 @@ export default function Dashboard() {
                 <ShoppingCart className="w-8 h-8 text-orange-300" />
               </div>
               <p className="text-gray-500 text-sm mb-3">Your cart is empty</p>
-              <Button onClick={() => navigate('/')} size="sm" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl">
+              <Button onClick={() => navigate('/restaurants')} size="sm" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl">
                 Browse Restaurants
               </Button>
             </div>
@@ -210,7 +214,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               ))}
-              {cartItems?.length > 3 && <p className="text-xs text-gray-400 text-center">+{cartItems.length - 3} more items</p>}
+              {cartItems?.length > 3 && <p className="text-xs text-gray-400 text-center" onClick={()=>navigate('/dashboard/cart')}>+{cartItems.length - 3} more items</p>}
               <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-400">Total</p>

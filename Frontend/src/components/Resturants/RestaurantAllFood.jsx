@@ -1,7 +1,7 @@
 import { useRef, useCallback,useEffect, useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router";
-import { loadMoreRestaurants } from '../../features/ResturantSlice';
+import { loadMoreRestaurants } from '../../slices/ResturantSlice';
 import FilterRestaurant from "./FilterRestaurant";
 import {SWIGGY_IMAGE_BASE_URL_FOR_DINE} from "../../Utils/Constants";
 

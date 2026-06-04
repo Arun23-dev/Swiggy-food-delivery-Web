@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import RestFoodData from './RestFoodData';
-import ResturantTopFood from './ResturantTopFood';
-import RestuarnatAllFood from "./ResturantAllFood";
+import ResturantTopFood from './RestaurantTopFood';
+import RestuarnatAllFood from "./RestaurantAllFood";
 import BestPlacesToEat from "./BestPlacesToEat";
 import BestCuisines from "./BestCuisine";
-import ExploreResturant from "./ExploreResturant";
+import ExploreResturant from "./ExploreRestaurant";
 import TopFoodShimmer from "../Shimmer/TopFoodShimmer";
-import { fetchRestaurants } from '../../features/ResturantSlice';
+import { fetchRestaurants } from '../../slices/ResturantSlice';
 
 export function ResturantDataFetch() {
     const { data, loading, error } = useSelector((state) => state.resturant);
@@ -19,6 +19,10 @@ export function ResturantDataFetch() {
 
     if (loading || !data) return <div><TopFoodShimmer /></div>;
     if (error) return <p>{error.message}</p>;
+
+
+
+    
 
     const foodData = data?.data?.cards?.[0]?.card?.card?.imageGridCards?.info;
     const TopFoodData = data?.data?.cards?.[1]?.card?.card?.gridElements?.infoWithStyle?.restaurants;

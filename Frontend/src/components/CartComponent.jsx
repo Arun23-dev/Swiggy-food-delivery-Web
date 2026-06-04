@@ -12,7 +12,7 @@ import {
     removeItemFromBackend,
     syncCartAfterLogin,
     fetchCartFromBackend
-} from '../features/cart/cartSlice';
+} from '../slices/cart/cartSlice';
 
 const CartComponent = () => {
     const dispatch = useDispatch();

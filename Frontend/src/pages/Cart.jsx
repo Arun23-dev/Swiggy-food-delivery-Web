@@ -1,18 +1,28 @@
-import React, { useState, useCallback,useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import {ShoppingCart, Trash2, Plus, Minus, Truck, Receipt,CreditCard, Zap, Package, DollarSign,} from 'lucide-react';
+import { FREE_DELIVERY_THRESHOLD, DELIVERY_FEE } from '@/Utils/Constants';
+import {
+  ShoppingCart, Trash2, Plus, Minus, Truck, Receipt,
+  CreditCard, Zap, Package, DollarSign,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router';
-import {increaseItem,decreaseItem,removeItem,removeItemFromBackend,updateItemBackend,syncCartAfterLogin} from '../features/CartSlice';
+import {
+  increaseItem,
+  decreaseItem,
+  removeItem,
+  removeItemFromBackend,
+  updateItemBackend,
+  syncCartAfterLogin,
+} from '../slices/CartSlice';
 import useDebouncedCallback from '../hooks/useDebounce';
+import { useCartSelection } from '../hooks/useCartSelection';
 
 const SWIGGY_BASE_URL = "https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_300,h_200,c_fit/";
-
-const getImageUrl = (imageId) =>
-  imageId ? `${SWIGGY_BASE_URL}${imageId}` : null;
+const getImageUrl = (imageId) => (imageId ? `${SWIGGY_BASE_URL}${imageId}` : null);
 
 const KPICard = ({ title, value, icon: Icon, bgColor, textColor }) => (
   <div className={`bg-white rounded-xl shadow-sm p-5 border-l-4 ${bgColor} hover:shadow-md transition`}>
@@ -31,21 +41,34 @@ const KPICard = ({ title, value, icon: Icon, bgColor, textColor }) => (
 function Cart() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { items } = useSelector((state) => state.cart);
+  const { restaurants } = useSelector((state) => state.cart);
   const { isAuthenticated } = useSelector((state) => state.user);
 
-  console.log(items);
-  console.log(isAuthenticated);
+  // ✅ Single hook call — same pattern as CheckoutPage
+  const {
+    cartItems,
+    selectedItemKeys,       // ✅ replaces local selectedKeys state
+    selectedCartItems,
+    groupedSelectedRestaurants,
+    selectedItemTotal,
+    selectedDeliveryFee,
+    selectedTotal,
+    toggleSelectItem,       // expects a key string
+    selectAll,
+    isAllSelected,
+    removeFromSelection,    // ✅ now available
+  } = useCartSelection(restaurants);
 
-    useEffect(() => {
-      if (isAuthenticated) {
-        dispatch(syncCartAfterLogin({ syncType: "reconcile" }));
-      }
-    }, [isAuthenticated, dispatch]);
-
-  const syncToBackend = useCallback(({ swiggyItemId, quantity }) => {
+  // ── Backend sync ───────────────────────────────────────────────────────────
+  useEffect(() => {
     if (isAuthenticated) {
-      dispatch(updateItemBackend({ swiggyItemId, quantity }));
+      dispatch(syncCartAfterLogin({ syncType: "merge" }));
+    }
+  }, [isAuthenticated, dispatch]);
+
+  const syncToBackend = useCallback(({ restaurantId, swiggyItemId, quantity }) => {
+    if (isAuthenticated) {
+      dispatch(updateItemBackend({ restaurantId, swiggyItemId, quantity }));
     }
   }, [isAuthenticated, dispatch]);
 
@@ -53,86 +76,129 @@ function Cart() {
 
   const handleIncrement = (item) => {
     const newQuantity = item.quantity + 1;
-    dispatch(increaseItem(item));
-    debouncedSync({ swiggyItemId: item.swiggyItemId, quantity: newQuantity });
+    dispatch(increaseItem({ restaurantId: item.restaurantId, swiggyItemId: item.swiggyItemId }));
+    debouncedSync({ restaurantId: item.restaurantId, swiggyItemId: item.swiggyItemId, quantity: newQuantity });
   };
 
-  const handleDecrement = (item) => {
+  const handleDecrement = async (item) => {
+    const compositeKey = `${item.restaurantId}_${item.swiggyItemId}`;
     if (item.quantity === 1) {
-      const actions = [dispatch(decreaseItem(item))];
-      if (isAuthenticated) {
-        actions.push(dispatch(removeItemFromBackend({ swiggyItemId: item.swiggyItemId })));
-      }
-      Promise.all(actions).catch((error) => {
-        console.log("Error occurred: " + error.message);
-      });
+      await Promise.all([
+        dispatch(decreaseItem({ restaurantId: item.restaurantId, swiggyItemId: item.swiggyItemId })),
+        isAuthenticated && dispatch(removeItemFromBackend({ swiggyItemId: item.swiggyItemId, restaurantId: item.restaurantId }))
+      ]);
+      removeFromSelection(compositeKey);   // ✅ works now
       return;
     }
     const newQuantity = item.quantity - 1;
-    dispatch(decreaseItem(item));
-    debouncedSync({ swiggyItemId: item.swiggyItemId, quantity: newQuantity });
+    dispatch(decreaseItem({ restaurantId: item.restaurantId, swiggyItemId: item.swiggyItemId }));
+    debouncedSync({ swiggyItemId: item.swiggyItemId, quantity: newQuantity, restaurantId: item.restaurantId });
   };
 
+const removeSingleItem = (item) => {
+    const compositeKey = `${item.restaurantId}_${item.swiggyItemId}`;
+    if (window.confirm(`Remove ${item.name}?`)) {
+
+        // Same array of objects format as deleteSelected
+        const groupedByRestaurant = [
+            {
+                restaurantId: item.restaurantId,
+                itemIds: [item.swiggyItemId]
+            }
+        ];
+
+        dispatch(removeItem({ restaurantId: item.restaurantId, swiggyItemId: item.swiggyItemId }));
+
+        if (isAuthenticated) {
+      
+            dispatch(removeItemFromBackend(groupedByRestaurant));
+        }
+
+        removeFromSelection(compositeKey);
+    }
+};
+
+const deleteSelected = () => {
+    if (window.confirm(`Delete ${selectedItemKeys.size} item(s)?`)) {
+
+        // Step 1: Build array of { restaurantId, itemIds }
+        const groupedByRestaurant = [];
+
+        cartItems.forEach((item) => {
+            const compositeKey = `${item.restaurantId}_${item.swiggyItemId}`;
+            if (selectedItemKeys.has(compositeKey)) {
+                const existing = groupedByRestaurant.find(r => r.restaurantId === item.restaurantId);
+                if (existing) {
+                    existing.itemIds.push(item.swiggyItemId);
+                } else {
+                    groupedByRestaurant.push({
+                        restaurantId: item.restaurantId,
+                        itemIds: [item.swiggyItemId]
+                    });
+                }
+            }
+        });
+
+        // Step 2: Remove from local redux state
+        cartItems.forEach((item) => {
+            const compositeKey = `${item.restaurantId}_${item.swiggyItemId}`;
+            if (selectedItemKeys.has(compositeKey)) {
+                dispatch(removeItem({ restaurantId: item.restaurantId, swiggyItemId: item.swiggyItemId }));
+                removeFromSelection(compositeKey);
+            }
+        });
+
+        // Step 3: One single backend request
+        if (isAuthenticated) {
+            dispatch(removeItemFromBackend(groupedByRestaurant));
+        }
+    }
+};
+
+  // ── Cart totals ────────────────────────────────────────────────────────────
+  const items = Array.isArray(cartItems) ? cartItems : [];
+
+  const totalQty = items.reduce((sum, i) => {
+    const qty = Number(i?.quantity) || 0;
+    return sum + qty;
+  }, 0);
+
+  const subtotal = items.reduce((sum, i) => {
+    const pricePerUnit = Math.floor(
+      Number(i?.defaultPrice ?? i?.price ?? 0) / 100
+    );
+
+    const qty = Number(i?.quantity) || 0;
+
+    return sum + pricePerUnit * qty;
+  }, 0);
+  const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
-  const [selectedItems, setSelectedItems] = useState(new Set());
-
-  const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = items.reduce((sum, item) => sum + Math.floor(item.price / 100) * item.quantity, 0);
-  const deliveryFee = subtotal >= 500 ? 0 : 30;
   const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal + deliveryFee - discount;
+  const total = subtotal > 0 ? (subtotal + deliveryFee - discount) : 0;
   const freeDeliveryLeft = Math.max(0, 500 - subtotal);
 
-  const toggleSelectItem = (swiggyItemId) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(swiggyItemId)) newSelected.delete(swiggyItemId);
-    else newSelected.add(swiggyItemId);
-    setSelectedItems(newSelected);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.size === items.length) {
-      setSelectedItems(new Set());
-    } else {
-      setSelectedItems(new Set(items.map(i => i.swiggyItemId)));
-    }
-  };
-
-  const deleteSelected = () => {
-    if (window.confirm(`Delete ${selectedItems.size} item(s)?`)) {
-      selectedItems.forEach(swiggyItemId => dispatch(removeItem({ id: swiggyItemId })));
-      setSelectedItems(new Set());
-    }
-  };
-
   const kpis = [
-    { title: "Total Items", value: items.length, icon: Package, bgColor: "border-blue-500", textColor: "text-blue-600" },
+    { title: "Total Items", value: cartItems.length, icon: Package, bgColor: "border-blue-500", textColor: "text-blue-600" },
     { title: "Quantity", value: totalQty, icon: ShoppingCart, bgColor: "border-orange-500", textColor: "text-orange-600" },
     { title: "Subtotal", value: `₹${subtotal}`, icon: DollarSign, bgColor: "border-green-500", textColor: "text-green-600" },
     { title: "To Pay", value: `₹${total}`, icon: CreditCard, bgColor: "border-purple-500", textColor: "text-purple-600" },
   ];
 
-  // ✅ Empty cart: show only this, no bill, no item list, no KPIs
-  if (items.length === 0) {
+  if (cartItems.length === 0) {
     return (
       <div className="w-full min-h-full bg-gray-50 p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          {kpis.map((kpi, idx) => (
-            <KPICard key={idx} {...kpi} />
-          ))}
+          {kpis.map((kpi, idx) => <KPICard key={idx} {...kpi} />)}
         </div>
-
         <div className="max-w-2xl mx-auto text-center py-20">
           <div className="w-24 h-24 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
             <ShoppingCart className="w-10 h-10 text-orange-400" />
           </div>
           <h2 className="text-2xl font-semibold text-gray-700">Your cart is empty</h2>
           <p className="text-gray-400 mt-2 mb-6">Add items from restaurants to get started</p>
-          <Button
-            onClick={() => navigate('/')}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
-          >
+          <Button onClick={() => navigate('/restaurants')} className="bg-orange-500 hover:bg-orange-600 text-white">
             Browse Restaurants
           </Button>
         </div>
@@ -140,125 +206,121 @@ function Cart() {
     );
   }
 
-  // ✅ Cart has items: show KPIs + items list + bill
   return (
     <div className="w-full min-h-full bg-gray-50 p-6">
       <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
 
-      {/* KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {kpis.map((kpi, idx) => (
-          <KPICard key={idx} {...kpi} />
-        ))}
+        {kpis.map((kpi, idx) => <KPICard key={idx} {...kpi} />)}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-
-        {/* LEFT COLUMN — Item list */}
         <div className="lg:w-[70%] space-y-4">
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-
-            {/* Toolbar */}
             <div className="p-4 border-b border-gray-100 flex justify-between items-center flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 text-sm text-gray-600">
                   <input
                     type="checkbox"
-                    checked={selectedItems.size === items.length && items.length > 0}
-                    onChange={toggleSelectAll}
+                    checked={isAllSelected}              // ✅ from hook
+                    onChange={selectAll}                 // ✅ from hook
                     className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
                   />
                   Select All
                 </label>
-                {selectedItems.size > 0 && (
+                {selectedItemKeys.size > 0 && (         // ✅ selectedItemKeys
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={deleteSelected}
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
-                    <Trash2 className="w-4 h-4 mr-1" /> Delete ({selectedItems.size})
+                    <Trash2 className="w-4 h-4 mr-1" /> Delete ({selectedItemKeys.size})
                   </Button>
                 )}
               </div>
               <Badge variant="secondary" className="text-xs">
-                {items.length} {items.length === 1 ? 'item' : 'items'}
+                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
               </Badge>
             </div>
 
-            {/* Items */}
             <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
               <AnimatePresence initial={false}>
-                {items.map((item) => (
-                  <motion.div
-                    key={item.swiggyItemId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="p-5 flex items-start gap-4 hover:bg-gray-50 transition"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(item.swiggyItemId)}
-                      onChange={() => toggleSelectItem(item.swiggyItemId)}
-                      className="mt-2 w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
-                    />
-
-                    {getImageUrl(item.image) ? (
-                      <img
-                        src={getImageUrl(item.image)}
-                        alt={item.name}
-                        className="w-20 h-20 object-cover rounded-xl bg-gray-100 shadow-sm"
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                {cartItems.map((item) => {
+                  const compositeKey = `${item.restaurantId}_${item.swiggyItemId}`;
+                  return (
+                    <motion.div
+                      key={compositeKey}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-5 flex items-start gap-4 hover:bg-gray-50 transition"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedItemKeys.has(compositeKey)}   // ✅
+                        onChange={() => toggleSelectItem(compositeKey)} // ✅ pass key string
+                        className="mt-2 w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
                       />
-                    ) : (
-                      <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs">
-                        No img
+
+                      {getImageUrl(item.image) ? (
+                        <img
+                          src={getImageUrl(item.image)}
+                          alt={item.name}
+                          className="w-20 h-20 object-cover rounded-xl bg-gray-100 shadow-sm"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs">
+                          No img
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-800">{item.name}</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          ₹{Math.floor((item.defaultPrice || item.price || 0) / 100)} each
+                        </p>
                       </div>
-                    )}
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-800">{item.name}</h3>
-                      <p className="text-sm text-gray-500 mt-0.5">₹{Math.floor(item.price / 100)} each</p>
-                    </div>
+                      <div className="flex items-center gap-2 bg-white rounded-full border border-gray-200 px-2 py-1 shadow-sm">
+                        <button
+                          onClick={() => handleDecrement(item)}
+                          className="w-7 h-7 rounded-full hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="font-semibold text-gray-700 min-w-[28px] text-center">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => handleIncrement(item)}
+                          className="w-7 h-7 rounded-full hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
 
-                    <div className="flex items-center gap-2 bg-white rounded-full border border-gray-200 px-2 py-1 shadow-sm">
-                      <button
-                        onClick={() => handleDecrement(item)}
-                        className="w-7 h-7 rounded-full hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="font-semibold text-gray-700 min-w-[28px] text-center">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => handleIncrement(item)}
-                        className="w-7 h-7 rounded-full hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="text-right min-w-[70px]">
-                      <p className="font-bold text-gray-800">₹{Math.floor(item.price / 100) * item.quantity}</p>
-                      <button
-                        onClick={() => {
-                          if (window.confirm('Remove item?')) dispatch(removeItem({ id: item.swiggyItemId }));
-                        }}
-                        className="text-gray-400 hover:text-red-500 text-xs mt-1"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="text-right min-w-[70px]">
+                        <p className="font-bold text-gray-800">
+                          ₹{Math.floor((item.defaultPrice || item.price || 0) / 100) * item.quantity}
+                        </p>
+                        <button
+                          onClick={() => removeSingleItem(item)}
+                          className="text-gray-400 hover:text-red-500 text-xs mt-1"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN — Bill (only rendered when items exist, guaranteed by early return above) */}
+        {/* RIGHT COLUMN — Bill (unchanged) */}
         <div className="lg:w-[30%] space-y-5">
           {freeDeliveryLeft > 0 ? (
             <div className="bg-amber-50 rounded-xl border border-amber-100 p-4 flex items-start gap-3">
@@ -355,6 +417,10 @@ function Cart() {
 
       </div>
     </div>
+
+
+
+
   );
 }
 

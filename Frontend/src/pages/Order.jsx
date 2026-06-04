@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { getMyOrders, cancelOrder } from '../features/OrderSlice';
+import { getMyOrders, cancelOrder, reorderFromOrder } from '../slices/OrderSlice';
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, CheckCircle, Clock, XCircle } from 'lucide-react';
 
@@ -17,12 +17,8 @@ const STEP_LABELS = {
 };
 
 const OrderProgressBar = ({ status }) => {
-  // Handle cancelled orders - don't show progress bar
   if (status === 'cancelled') return null;
-  
   const currentIndex = STEPS.indexOf(status);
-  
-  // If status not found in steps (e.g., 'cancelled'), don't render
   if (currentIndex === -1) return null;
 
   return (
@@ -30,7 +26,6 @@ const OrderProgressBar = ({ status }) => {
       {STEPS.map((step, idx) => {
         const isCompleted = currentIndex > idx;
         const isActive = currentIndex === idx;
-
         return (
           <React.Fragment key={step}>
             <div className="flex flex-col items-center gap-1 min-w-[60px]">
@@ -59,7 +54,6 @@ const OrderProgressBar = ({ status }) => {
                 {STEP_LABELS[step]}
               </span>
             </div>
-
             {idx < STEPS.length - 1 && (
               <div className="flex-1 h-[2px] mx-1 mb-4 rounded-full overflow-hidden bg-gray-200">
                 <div
@@ -75,7 +69,6 @@ const OrderProgressBar = ({ status }) => {
   );
 };
 
-// ─── KPI Card Component ──────────────────────────────────────────────────────
 const KPICard = ({ title, value, icon: Icon, bgColor, textColor }) => (
   <div className={`bg-white rounded-xl shadow-sm p-5 border-l-4 ${bgColor} hover:shadow-md transition`}>
     <div className="flex items-center justify-between">
@@ -90,25 +83,65 @@ const KPICard = ({ title, value, icon: Icon, bgColor, textColor }) => (
   </div>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 const Order = () => {
   const dispatch = useDispatch();
-  const { orders, loading } = useSelector(state => state.order);
+  const { orders, loading ,ordersFetched} = useSelector(state => state.order);
+
   const [filter, setFilter] = useState('all');
+  const [reordering,setReordering]=useState(false);
 
-  useEffect(() => {
-    dispatch(getMyOrders());
-  }, [dispatch]);
 
-  // Calculate KPI stats from orders
-  const calculateStats = () => {
-    const total = orders.length;
-    const delivered = orders.filter(o => o.status === 'delivered').length;
-    const pending = orders.filter(o => o.status === 'placed' || o.status === 'preparing' || o.status === 'pickedup').length;
-    const cancelled = orders.filter(o => o.status === 'cancelled').length;
-    return { total, delivered, pending, cancelled };
+   useEffect(() => {
+        if (!ordersFetched) {
+          dispatch(getMyOrders());
+  
+        }
+    }, [ ordersFetched]);
+  
+  
+  // Helper: flatten all items from restaurants array
+  const flattenOrderItems = (order) => {
+    if (!order || !order.restaurants) return [];
+    return order.restaurants.flatMap(restaurant =>
+        (restaurant.items || []).map(item => ({  // ✅ restaurant.items not orders
+            ...item,
+            restaurantId: restaurant.restaurantId,
+            restaurantName: restaurant.restaurantName
+        }))
+    );
+};
+
+  // Calculate KPI stats from orders (unchanged)
+   const calculateStats = () => {
+  const safeOrders = (orders || []).filter(Boolean);
+
+  const total = safeOrders.length;
+
+  const delivered = safeOrders?.filter(
+    o =>{ 
+        
+      return  o?.status === 'delivered'
+    }
+  ).length;
+
+  const pending = safeOrders.filter(
+    o =>
+      o.status === 'placed' ||
+      o.status === 'preparing' ||
+      o.status === 'pickedUp'
+  ).length;
+
+  const cancelled = safeOrders.filter(
+    o => o.status === 'cancelled'
+  ).length;
+
+  return {
+    total,
+    delivered,
+    pending,
+    cancelled,
   };
-
+};
   const stats = calculateStats();
 
   const kpiConfigs = [
@@ -118,9 +151,10 @@ const Order = () => {
     { title: "Cancelled", value: stats.cancelled, icon: XCircle, bgColor: "border-red-500", textColor: "text-red-600", cardBg: "bg-red-50" }
   ];
 
-  const filteredOrders = orders.filter(order =>
-    filter === 'all' ? true : order.status === filter
-  );
+  const filteredOrders = (orders || [])
+    .filter(Boolean)  // ✅ removes undefined/null
+    .filter(o => filter === 'all' ? true : o.status === filter);
+
 
   const handleCancel = (orderId) => {
     if (window.confirm('Are you sure you want to cancel this order?')) {
@@ -128,11 +162,35 @@ const Order = () => {
     }
   };
 
+  const handleReorder = async (orderId) => {
+    setReordering(true);
+    try {
+      const result = await dispatch(reorderFromOrder(orderId)).unwrap();
+     
+      if (result.unavailableItems && result.unavailableItems.length > 0) {
+        const message = `⚠️ Some items are no longer available:\n${result.unavailableItems
+          .map(i => `${i.itemName} (${i.restaurantName})`)
+          .join('\n')}`;
+        alert(message);
+      }
+      // Redirect to cart page
+      // navigate('/cart');
+    } catch (err) {
+      alert('Failed to reorder: ' + (err.message || 'Unknown error'));
+    } finally {
+      setReordering(false);
+    }
+  };
+  // const handleReorder=(orderId)=>{
+
+  //    dispatch(reorderFromOrder(orderId))
+  // }
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'placed': return 'bg-gray-100 text-gray-600';
       case 'preparing': return 'bg-yellow-100 text-yellow-600';
-      case 'pickedup': return 'bg-orange-100 text-orange-600';
+      case 'pickedUp': return 'bg-orange-100 text-orange-600';
       case 'delivered': return 'bg-green-100 text-green-600';
       case 'cancelled': return 'bg-red-100 text-red-600';
       default: return 'bg-gray-100 text-gray-600';
@@ -158,15 +216,14 @@ const Order = () => {
 
       {/* Filters */}
       <div className="flex gap-3 mb-6 flex-wrap">
-        {['all', 'placed', 'preparing', 'pickedup', 'delivered', 'cancelled'].map((f) => (
+        {['all', 'placed', 'preparing', 'pickedUp', 'delivered', 'cancelled'].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition capitalize ${
-              filter === f
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition capitalize ${filter === f
+              ? 'bg-orange-500 text-white shadow-md'
+              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+              }`}
           >
             {f === 'all' ? 'All Orders' : f}
           </button>
@@ -181,120 +238,129 @@ const Order = () => {
           </div>
         ) : (
           <>
-            {filteredOrders.map((order) => (
-              <motion.div
-                key={order._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
-              >
-                <div className="p-5">
-                  {/* Header */}
-                  <div className="flex justify-between items-start gap-4 mb-3">
-                    <div className="space-y-1">
-                      <h2 className="font-bold text-gray-800 text-lg">
-                        Order #{order._id.slice(-8)}
-                      </h2>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium capitalize ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {new Date(order.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
+            {filteredOrders.map((order) => {
+              // Flatten items from restaurants array
+              const itemsList = flattenOrderItems(order);
+              const totalItemCount = itemsList.reduce((sum, i) => sum + i.quantity, 0);
 
-                    <div className="flex gap-3">
-                      <Button
-                        variant="outline"
-                        className="rounded-lg px-4 py-2 text-sm font-medium border-amber-300 text-amber-700 hover:bg-amber-50 transition"
-                      >
-                        Order Details
-                      </Button>
-
-                      {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                        <Button
-                          onClick={() => handleCancel(order._id)}
-                          className="rounded-lg px-4 py-2 text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition shadow-sm"
-                        >
-                          Cancel Order
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Progress Bar - only for active orders */}
-                  {order.status !== 'cancelled' && (
-                    <OrderProgressBar status={order.status} />
-                  )}
-
-                  {/* Reorder button for delivered orders */}
-                  {order.status === 'delivered' && (
-                    <button className="mb-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                      Reorder
-                    </button>
-                  )}
-                </div>
-
-                {/* Items List */}
-                <div className="px-5 pb-5">
-                  <div className="mb-4 divide-y divide-gray-100">
-                    {order.items.map((item, idx) => {
-                      const imageUrl = getImageUrl(item.image);
-                      return (
-                        <div key={idx} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                          {imageUrl ? (
-                            <img
-                              src={imageUrl}
-                              alt={item.name}
-                              className="w-16 h-16 object-cover rounded-xl bg-gray-50 shadow-sm"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '';
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs">
-                              No img
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <div className="flex justify-between items-baseline flex-wrap gap-2">
-                              <span className="font-semibold text-gray-800">{item.name}</span>
-                              <div className="text-right">
-                                <span className="font-semibold text-gray-900">₹{item.price}</span>
-                                <span className="text-gray-500 text-sm ml-1">each</span>
-                              </div>
-                            </div>
-                            <div className="text-sm text-gray-500 mt-0.5">Quantity: {item.quantity}</div>
-                          </div>
+              return (
+                <motion.div
+                  key={order._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
+                >
+                  <div className="p-5">
+                    {/* Header */}
+                    <div className="flex justify-between items-start gap-4 mb-3">
+                      <div className="space-y-1">
+                        <h2 className="font-bold text-gray-800 text-lg">
+                          Order #{order?._id.slice(-8)}
+                        </h2>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-xs px-3 py-1 rounded-full font-medium capitalize ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(order.createdAt).toLocaleString()}
+                          </span>
                         </div>
-                      );
-                    })}
+                      </div>
+
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          className="rounded-lg px-4 py-2 text-sm font-medium border-amber-300 text-amber-700 hover:bg-amber-50 transition"
+                        >
+                          Order Details
+                        </Button>
+                        {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                          <Button
+                            onClick={() => handleCancel(order._id)}
+                            className="rounded-lg px-4 py-2 text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition shadow-sm"
+                          >
+                            Cancel Order
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Progress Bar - only for active orders */}
+                    {order.status !== 'cancelled' && (
+                      <OrderProgressBar status={order.status} />
+                    )}
+
+                    {/* Reorder button for delivered orders */}
+                    {order.status === 'delivered' && (
+                      <button onClick={() => handleReorder(order._id)}
+                        className="mb-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                        Reorder
+                      </button>
+                    )}
                   </div>
 
-                  {/* Price summary & address */}
-                  <div className="border-t border-gray-100 pt-3">
-                    <div className="flex justify-between items-center text-sm flex-wrap gap-2">
-                      <div className="text-gray-500 flex items-center gap-1">
-                        <span>📍</span> {order.deliveryAddress?.street}, {order.deliveryAddress?.city} - {order.deliveryAddress?.pincode}
-                      </div>
-                      <div className="font-bold text-gray-800 text-lg">
-                        Total: ₹{order.totalAmount}
+                  {/* Items List */}
+                  <div className="px-5 pb-5">
+                    <div className="mb-4 divide-y divide-gray-100">
+                      {itemsList.map((item, idx) => {
+                        const imageUrl = getImageUrl(item.image);
+                        const itemTotal = Math.round((item.price || 0) * item.quantity);
+
+                        return (
+                          <div key={`${item.swiggyItemId}-${idx}`} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
+                            {/* Image */}
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={item.name}
+                                className="w-16 h-16 object-cover rounded-xl bg-gray-50 shadow-sm flex-shrink-0"
+                                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
+                                No img
+                              </div>
+                            )}
+
+                            {/* Name + Qty + Each price */}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-800 truncate">{item.name}</p>
+                              <p className="text-sm text-gray-500 mt-0.5">
+                                Qty: {item.quantity} &nbsp;·&nbsp;
+                                <span className="text-gray-400">₹{item.price} each</span>
+                              </p>
+                            </div>
+
+                            {/* Total price on the right */}
+                            <div className="text-right flex-shrink-0">
+                              <p className="font-bold text-gray-900 text-base">₹{itemTotal}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Price summary & address */}
+                    <div className="border-t border-gray-100 pt-3">
+                      <div className="flex justify-between items-center text-sm flex-wrap gap-2">
+                        <div className="text-gray-500 flex items-center gap-1">
+                          <span>📍</span> {order.deliveryAddress?.street}, {order.deliveryAddress?.city} - {order.deliveryAddress?.pincode}
+                        </div>
+                        <div className="font-bold text-gray-800 text-lg">
+                          Total: ₹{order.totalAmount}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
 
             {!loading && filteredOrders.length === 0 && (
               <div className="text-center py-16 bg-white rounded-2xl">
                 <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">No orders found</p>
-                <button 
+                <button
                   onClick={() => window.location.href = '/'}
                   className="mt-3 text-orange-500 text-sm hover:underline"
                 >

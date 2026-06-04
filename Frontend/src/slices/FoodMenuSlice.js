@@ -13,12 +13,11 @@ export const fetchFoodMenu = createAsyncThunk(
 
             const cachedData = await getFromCache(CACHE_URL);
             if (cachedData) {
-            
+
                 return { restaurantId, data: cachedData };
             }
-
             const response = await axiosClient.get(`/api/restaurants/${restaurantId}`)
-
+            
             if (response.status !== 200) {
                 throw new Error("Failed to fetch menu");
             }

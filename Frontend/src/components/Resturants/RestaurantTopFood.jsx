@@ -1,6 +1,6 @@
-import ResturantTopFoodCard from "./ResturantTopFoodCard"
+import RestaurantTopFoodCard from "./RestaurantTopFoodCard"
 import { useRef, useState, useEffect } from "react";
-export default function ResturantTopFood({ TopFoodData }) {
+export default function RestaurantTopFood({ TopFoodData }) {
   const scrollRef = useRef();
   const [buttonLeft, setButtonLeft] = useState(false);
   const [buttonRight, setButtonRight] = useState(true);
@@ -37,7 +37,7 @@ export default function ResturantTopFood({ TopFoodData }) {
       {/* arrow and header */}
       <div className="mb-4 h-[25.195px]  flex justify-between ">
         <h2 className="text-[21px] font-bold  text-[#02060ceb]">
-          Top Resturants Chain in Delhi
+          Top Restaurants Chain in Delhi
         </h2>
         <div className="flex">
           <button
@@ -70,7 +70,7 @@ export default function ResturantTopFood({ TopFoodData }) {
         ref={scrollRef}
         className=" h-[286.297px] flex flex-nowrap overflow-x-auto scrollbar-hide scroll scroll-smooth mb-4"
       >
-       { TopFoodData?.map((data)=><ResturantTopFoodCard key={data?.info?.id} data={data}></ResturantTopFoodCard>)
+       { TopFoodData?.map((data)=><RestaurantTopFoodCard key={data?.info?.id} data={data}></RestaurantTopFoodCard>)
         }
       </div>
     </div>

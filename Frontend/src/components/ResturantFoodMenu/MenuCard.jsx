@@ -1,6 +1,7 @@
 import { useState } from "react";
 import MenuDetails from "./MenuDetails";
-export default function MenuCard({ data, dropState, selected, bestSeller }) {
+export default function MenuCard({ data, restaurantData,dropState, selected, bestSeller }) {
+
 
   const [dropDown, setDropdown] = useState(dropState ?? true);
 
@@ -36,7 +37,7 @@ export default function MenuCard({ data, dropState, selected, bestSeller }) {
           </div>
           {dropDown &&
             filteredItems.map((item) => (
-              <MenuDetails Details={item} key={item.card.info.name} />
+              <MenuDetails Details={item} key={item.card.info.name} restaurantData={restaurantData}/>
             ))}
         </div>
         <div
@@ -58,6 +59,7 @@ export default function MenuCard({ data, dropState, selected, bestSeller }) {
             key={category.title}
             selected={selected}
             bestSeller={bestSeller}
+              restaurantData={restaurantData}
           />
         ))}
       </div>

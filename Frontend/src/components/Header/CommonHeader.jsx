@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useParams, useNavigate, useLocation } from "react-router";
 import useAuth from "../../hooks/useAuth";
-import { setRedirectURL } from "@/features/RedirectSlice"; 
+import { setRedirectURL } from "@/slices/RedirectSlice"; 
 // import { syncCartAfterLogin } from "@/features/cart/cartSlice";
 
 export default function CommonHeader() {

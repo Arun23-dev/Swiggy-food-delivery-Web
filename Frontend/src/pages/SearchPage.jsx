@@ -9,38 +9,41 @@ export default function SearchPage() {
   const [showData, setShowData] = useState([]);
 
   const { restaurantId } = useParams();
-  
+
   const { cache, loading } = useSelector((state) => state.foodMenu)
 
 
   useEffect(() => {
 
-        const data =cache[restaurantId]
+    const data = cache[restaurantId]
 
-        const cards =
-          data?.data?.cards.at(-1)?.groupedCard?.cardGroupMap?.REGULAR?.cards ||
-          [];
-        const filteredData = cards.filter((data) => {
-          return data.card?.card?.itemCards || data.card?.card?.categories;
-        });
+    console.log(data);
+
+    const cards =
+      data?.data?.cards.at(-1)?.groupedCard?.cardGroupMap?.REGULAR?.cards ||
+      [];
+    const filteredData = cards.filter((data) => {
+      return data.card?.card?.itemCards || data.card?.card?.categories;
+    });
 
 
-        const filteredArrayData = filteredData.flatMap((item) => {
+    const filteredArrayData = filteredData.flatMap((item) => {
 
-          const inner = item.card.card;
+      const inner = item.card.card;
 
-          if (inner.itemCards) {
-            return inner.itemCards;
-          }
+      if (inner.itemCards) {
+        return inner.itemCards;
+      }
 
-          if (inner.categories) {
-            return inner.categories.flatMap((item) => {
-              return item.itemCards;
-            })
-         }
+      if (inner.categories) {
+        return inner.categories.flatMap((item) => {
+          return item.itemCards;
         })
+      }
+    })
+    console.log(filteredArrayData);
 
-        setMenuData(filteredArrayData); 
+    setMenuData(filteredArrayData);
 
   }, [restaurantId]);
 

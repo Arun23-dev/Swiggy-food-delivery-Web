@@ -42,8 +42,6 @@ export const loadMoreRestaurants = createAsyncThunk(
     async ({ offset }, { rejectWithValue }) => {
         try {
             const response = await axiosClient.get(`api/restaurants?offset=${offset}`);
-
-            console.log("Second  Fetched Data Here", response.data);
             return response.data;
 
         } catch (error) {
