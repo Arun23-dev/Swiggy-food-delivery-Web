@@ -1,0 +1,10 @@
+
+const FREE_DELIVERY_THRESHOLD = 1000;
+const DELIVERY_CHARGE = 67;
+module.exports = {
+    FREE_DELIVERY_THRESHOLD,
+    DELIVERY_CHARGE
+
+
+
+}

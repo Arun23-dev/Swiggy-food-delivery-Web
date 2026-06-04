@@ -1,284 +1,360 @@
-const Cart = require('../models/cart');
-
-// POST /api/cart/add
-async function addToCart(req, res) {
+// Backend/src/controllers/cart-controller.js
+const Cart = require("../models/cart");
+const getFormattedCart = require('../utils/getFormattedCart')
+// Get cart by user ID
+const getCart = async (req, res) => {
     try {
-   
-        const { user, restaurant, items, totalAmount } = req.body;
 
-        const [item] = items;
-
-        let cart = await Cart.findOne({ user: user });
+        const userId = req.result._id;
+        let cart = await Cart.findOne({ user: userId });
 
         if (!cart) {
-            cart = new Cart({
-                user: user,
-                restaurant: restaurant,
-                items: [],
-                totalAmount: 0
-            });
+            cart = {
+                restaurants: [],
+                count: 0,
+                totalAmount: 0,
+            };
         }
 
-        const existingItem = cart.items?.find(i => i.itemId === item.itemId);
-
-        if (existingItem) {
-            existingItem.quantity += item.quantity;
-        } else {
-            cart.items.push(item);
-
-            cart.totalAmount = cart.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-
-            await cart.save();
-            res.status(200).json({ success: true, cart });
-
-        }
-    }
-    catch (error) {
-       
-    
-    }
-};
-
-// GET /api/cart
-async function getCart(req, res) {
-    try {
-        const { userId } = req.params
-        const cart = await Cart.findById(userId);
-
-        if (!cart) {
-            return
-            res.status(404).json({ success: false, message: "Cart is empty" });
-        }
-        res.status(200).json({ success: true, cart });
-
+        res.json({
+            success: true,
+            cart: {
+                restaurants: cart.restaurants,
+                count: cart.count,
+                totalAmount: cart.totalAmount,
+            },
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Get cart error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to get cart",
+            error: error.message,
+        });
     }
 };
 
-// PATCH /api/cart/update/:itemId
+// Update item quantity
 const updateQuantity = async (req, res) => {
     try {
         const { itemId } = req.params;
-        const { quantity, user } = req.body;
 
-        const cart = await Cart.findOne({ user: user });
-        if (!cart) return res.status(404).json({ success: false, message: "Cart not found" });
+        const { quantity, restaurantId } = req.body;
+        const userId = req.result._id;
 
-        const item = cart.items.find(item => item.itemId === itemId);
-        if (!item) return res.status(404).json({ success: false, message: "Item not found" });
+        const cart = await Cart.findOne({ user: userId });
 
-        if (quantity <= 0) {
-            // if quantity 0 just remove the item
-            cart.items = cart.items.filter(item => item.itemId !== itemId);
-        } else {
-            item.quantity = quantity;
+        if (!cart) {
+            return res.status(404).json({
+                success: false,
+                message: "Cart not found",
+            });
         }
 
-        // recalculate total
-        cart.totalAmount = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        const restaurant = cart.restaurants.find(
+            (r) => r.restaurantId === restaurantId,
+        );
 
-        await cart.save();
-        res.status(200).json({ success: true, cart });
+        if (restaurant) {
+            const item = restaurant.items.find((i) => i.swiggyItemId === itemId);
 
+            if (item) {
+                if (quantity <= 0) {
+                    // Remove item
+                    restaurant.items = restaurant.items.filter(
+                        (i) => i.swiggyItemId !== itemId,
+                    );
+
+                    // Remove restaurant if empty
+                    if (restaurant.items.length === 0) {
+                        cart.restaurants = cart.restaurants.filter(
+                            (r) => r.restaurantId !== restaurantId,
+                        );
+                    }
+                } else {
+                    item.quantity = quantity;
+                }
+
+                await cart.save();
+            }
+        }
+        res.json({
+            success: true,
+            message: "Quantity updated",
+            cart: {
+                restaurants: cart.restaurants,
+                count: cart.count,
+                totalAmount: cart.totalAmount,
+            },
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Update quantity error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update quantity",
+            error: error.message,
+        });
     }
 };
-
-// DELETE /api/cart/remove/:itemId
-const removeItem = async (req, res) => {
+// remove item form the cart 
+const removeSelectedItem = async (req, res) => {
     try {
-        const { itemId } = req.params;
-        const { quantity, user } = req.body;
+        const { items } = req.body;
+      
+        const userId = req.result._id;
 
-        const cart = await Cart.findOne({ user: user });
-        if (!cart) return res.status(404).json({ success: false, message: "Cart not found" });
+        // Step 1: Pull items per restaurant
+        for (const { restaurantId, itemIds } of items) {
+            await Cart.updateOne(
+                { user: userId },
+                {
+                    $pull: {
+                        "restaurants.$[r].items": { swiggyItemId: { $in: itemIds } }
+                    }
+                },
+                { arrayFilters: [{ "r.restaurantId": restaurantId }] }
+            );
+        }
 
-        cart.items = cart.items.filter(item => item.itemId !== itemId);
+        // Step 2: Clean empty/corrupt restaurants
+        await Cart.updateOne(
+            { user: userId },
+            {
+                $pull: {
+                    restaurants: {
+                        $or: [
+                            { items: { $size: 0 } },
+                            { restaurantId: { $exists: false } },
+                            { restaurantName: { $exists: false } }
+                        ]
+                    }
+                }
+            }
+        );
 
-        // recalculate total
-        cart.totalAmount = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        // Step 3: Fetch, recalculate, save
+        const cart = await Cart.findOne({ user: userId });
 
-        await cart.save();
-        res.status(200).json({ success: true, message: "Item removed", cart });
+        await cart.save(); // triggers pre('save') → recalculates count + totalAmount
+
+        res.json({
+            success: true,
+            message: "Item removed",
+            cart: getFormattedCart(cart),
+        });
 
     } catch (error) {
+        console.error("Remove item error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// DELETE /api/cart/clear
+// Clear entire cart
 const clearCart = async (req, res) => {
     try {
-        await Cart.findOneAndDelete({ user: req.user.id });
-        res.status(200).json({ success: true, message: "Cart cleared" });
+        const userId = req.result._id;
 
+        const cart = await Cart.findOneAndUpdate(
+            { user: userId },
+            {
+                restaurants: [],
+                count: 0,
+                totalAmount: 0,
+            },
+            { new: true, upsert: true },
+        );
+
+        res.json({
+            success: true,
+            message: "Cart cleared",
+            cart: {
+                restaurants: [],
+                count: 0,
+                totalAmount: 0,
+            },
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Clear cart error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to clear cart",
+            error: error.message,
+        });
     }
 };
 const syncCart = async (req, res) => {
     try {
-       
-        const { userId, localCart } = req.body;
+        const { syncType, localCart } = req.body;
 
-        if (Object.keys(localCart).length===0) {
+        const userId = req.result._id;
 
-            let dbCart = await Cart.findOne({ user: userId });
-            
+        // Helper to compute count & totalAmount from restaurants array
 
-            return res.json({
-                success: true,
-                message: 'Data send fro the cart of the user',
-                cart: {
-                    items: dbCart.items,
-                    count: dbCart.count,
-                    totalAmount: dbCart.totalAmount
+        const computeCartTotals = (restaurants) => {
+            let count = 0;
+            let totalAmount = 0;
+            for (const rest of restaurants) {
+                for (const item of rest.items) {
+                    count += item.quantity;
+                    totalAmount += item.price * item.quantity;
                 }
-            });
+            }
+            return { count, totalAmount };
+        };
 
-
-        }
-        let userCart = await Cart.findOne({ user: userId });
-
-        if (!userCart) {
-            // Calculate totals for new cart
-            const items = localCart?.items.map(item => ({
-                itemId: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                image: item.image || null
+        // Helper to prepare restaurants data (ensures correct fields)
+        const prepareRestaurants = (cartData) => {
+            return (cartData?.restaurants || []).map((r) => ({
+                restaurantId: r.restaurantId,
+                restaurantName: r.restaurantName,
+                restaurantImage: r.restaurantImage || "",
+                city: r.city || "",
+                locality: r.locality || "",
+                items: (r.items || []).map((i) => ({
+                    swiggyItemId: i.swiggyItemId,
+                    name: i.name,
+                    price: i.price,
+                    quantity: i.quantity,
+                    image: i.image,
+                })),
             }));
+        };
 
-            const count = items.reduce((sum, item) => sum + item.quantity, 0);
-            const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-            // Create new cart
-            userCart = new Cart({
-                user: userId,
-                items: items,
-                count: count,
-                totalAmount: totalAmount
-            });
-
-            await userCart.save();
-
-            // ✅ Return FRESH data from database
-            const freshCart = await Cart.findOne({ user: userId }).lean();
-
+        // ==================== RECONCILE (local wins completely) ====================
+        if (syncType === "reconcile") {
+            const finalRestaurants = prepareRestaurants(localCart);
+            const { count, totalAmount } = computeCartTotals(finalRestaurants);
+            const updatedCart = await Cart.findOneAndUpdate(
+                { user: userId },
+                { $set: { restaurants: finalRestaurants, count, totalAmount } },
+                { upsert: true, new: true }
+            );
             return res.json({
                 success: true,
-                message: 'New cart created with guest items',
+                message: "Cart reconciled (local replaces DB)",
                 cart: {
-                    items: freshCart.items,
-                    count: freshCart.count,
-                    totalAmount: freshCart.totalAmount
-                }
+                    restaurants: updatedCart.restaurants,
+                    count: updatedCart.count,
+                    totalAmount: updatedCart.totalAmount,
+                },
             });
         }
 
-        //  If cart exists in DB but is EMPTY
-        if (userCart.items.length === 0 && localCart.items.length > 0) {
-        
-            // Add all guest items
-            userCart.items = localCart.items.map(item => ({
-                itemId: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                image: item.image || null
-            }));
+        // ==================== MERGE (local items win, keep DB metadata) ====================
+        let dbCart = await Cart.findOne({ user: userId });
+        const localRestaurants = localCart?.restaurants || [];
 
-            // Recalculate totals
-            userCart.count = userCart.items.reduce((sum, item) => sum + item.quantity, 0);
-            userCart.totalAmount = userCart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-            await userCart.save();
-
-            //  Return fresh data
-            const freshCart = await Cart.findOne({ user: userId }).lean();
-
+        // Case: no DB cart and no local items
+        if (!dbCart && localRestaurants.length === 0) {
+            const { count, totalAmount } = computeCartTotals([]);
+            const emptyCart = await Cart.findOneAndUpdate(
+                { user: userId },
+                { $set: { restaurants: [], count, totalAmount } },
+                { upsert: true, new: true }
+            );
             return res.json({
                 success: true,
-                message: 'Empty cart updated with guest items',
+                message: "No cart data",
                 cart: {
-                    items: freshCart.items,
-                    count: freshCart.count,
-                    totalAmount: freshCart.totalAmount
-                }
+                    restaurants: emptyCart.restaurants,
+                    count: emptyCart.count,
+                    totalAmount: emptyCart.totalAmount,
+                },
             });
         }
 
-        //  MERGE LOGIC using HashMap
-        const itemLookup = {};
+        // Case: no DB cart but local has items – create from local
+        if (!dbCart) {
+            const finalRestaurants = prepareRestaurants(localCart);
+            const { count, totalAmount } = computeCartTotals(finalRestaurants);
+            const newCart = await Cart.findOneAndUpdate(
+                { user: userId },
+                { $set: { restaurants: finalRestaurants, count, totalAmount } },
+                { upsert: true, new: true }
+            );
+            return res.json({
+                success: true,
+                message: "Cart created from local",
+                cart: {
+                    restaurants: newCart.restaurants,
+                    count: newCart.count,
+                    totalAmount: newCart.totalAmount,
+                },
+            });
+        }
 
-        // Index existing items
-        userCart.items.forEach(item => {
-            itemLookup[item.itemId] = item;
-        });
+        // DB cart exists → merge local items
+        const mergedRestaurants = [...dbCart.restaurants];
 
-        let hasChanges = false;
-
-        // Merge guest items
-        for (const guestItem of localCart.items) {
-            if (itemLookup[guestItem.id]) {
-                // Update existing
-                const oldQuantity = itemLookup[guestItem.id].quantity;
-                itemLookup[guestItem.id].quantity += guestItem.quantity;
-                if (oldQuantity !== itemLookup[guestItem.id].quantity) {
-                    hasChanges = true;
+        for (const localRest of localRestaurants) {
+            const existingIndex = mergedRestaurants.findIndex(
+                (r) => r.restaurantId === localRest.restaurantId
+            );
+            if (existingIndex !== -1) {
+                const dbItems = mergedRestaurants[existingIndex].items;
+                for (const localItem of localRest.items) {
+                    const itemIndex = dbItems.findIndex(
+                        (i) => i.swiggyItemId === localItem.swiggyItemId
+                    );
+                    if (itemIndex !== -1) {
+                        dbItems[itemIndex].quantity = localItem.quantity;
+                    } else {
+                        dbItems.push(localItem);
+                    }
                 }
-            } else {
-                // Add new item
-                const newItem = {
-                    itemId: guestItem.id,
-                    name: guestItem.name,
-                    price: guestItem.price,
-                    quantity: guestItem.quantity,
-                    image: guestItem.image || null
+                mergedRestaurants[existingIndex] = {
+                    ...mergedRestaurants[existingIndex],
+                    restaurantName:
+                        localRest.restaurantName ||
+                        mergedRestaurants[existingIndex].restaurantName,
+                    city: localRest.city || mergedRestaurants[existingIndex].city,
+                    locality:
+                        localRest.locality || mergedRestaurants[existingIndex].locality,
+                    items: dbItems,
                 };
-                userCart.items.push(newItem);
-                itemLookup[guestItem.id] = newItem;
-                hasChanges = true;
+            } else {
+                mergedRestaurants.push({
+                    restaurantId: localRest.restaurantId,
+                    restaurantName: localRest.restaurantName,
+                    restaurantImage: localRest.restaurantImage || "",
+                    city: localRest.city || "",
+                    locality: localRest.locality || "",
+                    items: localRest.items,
+                });
             }
         }
 
-        //  Only save if there are changes
-        if (hasChanges) {
-            
-            userCart.count = userCart.items.reduce((sum, item) => sum + item.quantity, 0);
-            userCart.totalAmount = userCart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        // Compute totals from the merged array and update atomically
+        const { count, totalAmount } = computeCartTotals(mergedRestaurants);
+        const updatedCart = await Cart.findOneAndUpdate(
+            { user: userId },
+            { $set: { restaurants: mergedRestaurants, count, totalAmount } },
+            { new: true } // Cart exists, no upsert needed
+        );
 
-            await userCart.save();
-
-            console.log('Cart merged and saved successfully');
-        }
-         else {
-            console.log('No changes detected, skipping save');
-        }
-
-        //  ALWAYS return FRESH data from database (avoid cache)
-        const freshCart = await Cart.findOne({ user: userId }).lean();
-
-        res.json({
+        return res.json({
             success: true,
-            message: 'Cart synced successfully',
+            message: "Cart merged (local wins)",
             cart: {
-                items: freshCart.items,
-                count: freshCart.count,
-                totalAmount: freshCart.totalAmount
-            }
+                restaurants: updatedCart.restaurants,
+                count: updatedCart.count,
+                totalAmount: updatedCart.totalAmount,
+            },
         });
-
     } catch (error) {
-
+        console.error("Sync cart error:", error);
         res.status(500).json({
             success: false,
-            message: 'Failed to sync cart',
-            error: error.message
+            message: "Failed to sync cart",
+            error: error.message,
         });
     }
 };
-module.exports = { addToCart, getCart, updateQuantity, removeItem, clearCart, syncCart };
+// Make sure to export only the functions (no extra code)
+module.exports = {
+    getCart,
+    updateQuantity,
+    removeSelectedItem,
+    clearCart,
+    syncCart,
+};

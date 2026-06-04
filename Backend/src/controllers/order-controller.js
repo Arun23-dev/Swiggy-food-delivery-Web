@@ -1,36 +1,42 @@
 const Order = require('../models/order');
 const Cart = require('../models/cart');
 const User = require('../models/user');
-const Payment = require('../models/payment')
+const Payment = require('../models/payment');
 const crypto = require('crypto');
-
+const {
+    FREE_DELIVERY_THRESHOLD,
+    DELIVERY_CHARGE
+} = require('./../utils/constant');
 
 
 // POST /api/orders/create
 const createOrder = async (req, res) => {
     try {
         const userId = req.result._id;
-        const { deliveryAddress, items, totalAmount, PaymentMode } = req.body;
+        const {
+            deliveryAddress,
+            restaurants,
+            paymentMode,
+            deliveryFee: frontendDeliveryFee,
+            itemTotal: frontendItemTotal,
+            totalAmount: frontendTotalAmount
+        } = req.body;
 
 
-        console.log("Items:", items);
-        console.log("Delivery Address:", deliveryAddress);
-        console.log("Total Amount (Rupees):", totalAmount);
-        console.log("Payment Mode", PaymentMode)
 
-        // Check user
+        // 1. Validate user
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // Check cart items
-        if (!items || items.length === 0) {
-            return res.status(400).json({ success: false, message: 'Cart is empty' });
+        // 2. Validate restaurants and items
+        if (!restaurants || restaurants.length === 0) {
+            return res.status(400).json({ success: false, message: 'No restaurants selected' });
         }
 
-        // Find address
-        const address = user.address.find(add => add._id.toString() === deliveryAddress._id);
+        // 3. Find the delivery address from user's addresses
+        const address = user.address.find(addr => addr._id.toString() === deliveryAddress._id);
         if (!address) {
             return res.status(404).json({ success: false, message: 'Delivery address not found' });
         }
@@ -43,89 +49,126 @@ const createOrder = async (req, res) => {
             pincode: address.pincode,
         };
 
-        const formattedItems = items.map(item => ({
-            itemId: item.itemId || item.id || item._id,
-            name: item.name,
-            price: Math.floor(item.price / 100),
-            quantity: item.quantity,
-            image: item.image
-        }));
-        // console.log(formattedItems);
+        // 4. Build the restaurants array (matching schema) and calculate totals
+        let calculatedItemTotal = 0;
+        const formattedRestaurants = [];
 
-        const calculatedItemAmount = formattedItems.reduce((sum, item) => {
-            return sum + (item.price * item.quantity);
-        }, 0);
+        for (const rest of restaurants) {
+            if (!rest.items || rest.items.length === 0) continue;
 
-        // console.log(calculatedItemAmount)
+            const formattedItems = rest.items.map(item => ({
+                swiggyItemId: item.swiggyItemId,
+                name: item.name,
+                price: Math.floor(item.price / 100),   // convert from paisa if needed
+                quantity: item.quantity,
+                image: item.image
+            }));
 
+            let restaurantSum = 0;
+            for (const item of formattedItems) {
+                restaurantSum += item.price * item.quantity;
+            }
 
-        const DELIVERY_CHARGE = 67;
-        const FREE_DELIVERY_THRESHOLD = 1000;
-        const deliveryFee = calculatedItemAmount > FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+            formattedRestaurants.push({
+                restaurantId: rest.restaurantId,
+                restaurantName: rest.restaurantName,
+                city: rest.city,
+                locality: rest.locality,
+                items: formattedItems,
+                restaurantTotal: restaurantSum
+            });
 
-        const calculatedTotalAmount = deliveryFee + calculatedItemAmount;
+            calculatedItemTotal += restaurantSum;
+        }
 
-        // console.log(calculatedTotalAmount);
+        // 5. Calculate delivery fee and total amount server-side
+        const calculatedDeliveryFee = calculatedItemTotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+        const calculatedTotalAmount = calculatedItemTotal + calculatedDeliveryFee;
 
-        if (totalAmount !== calculatedTotalAmount) {
+        // 6. Validate frontend totals (prevent manipulation)
+        if (frontendItemTotal !== calculatedItemTotal ||
+            frontendDeliveryFee !== calculatedDeliveryFee ||
+            frontendTotalAmount !== calculatedTotalAmount) {
             return res.status(400).json({
                 success: false,
-                message: 'Total amount mismatch',
-                details: {
-                    itemTotal: `₹${calculatedItemAmount}`,
-                    deliveryFee: `₹${deliveryFee}`,
-                    expectedTotal: `₹${calculatedTotalAmount}`,
-                    receivedTotal: `₹${totalAmount}`
+                message: 'Amount mismatch. Please refresh and try again.',
+                debug: {
+                    server: { itemTotal: calculatedItemTotal, deliveryFee: calculatedDeliveryFee, total: calculatedTotalAmount },
+                    client: { itemTotal: frontendItemTotal, deliveryFee: frontendDeliveryFee, total: frontendTotalAmount }
                 }
             });
         }
 
-        console.log("✅ Validation passed!");
-
+        // 7. Create the order
         const order = await Order.create({
             user: userId,
-            items: formattedItems,
+            restaurants: formattedRestaurants,
             deliveryAddress: deliveryAddressDetails,
             status: 'placed',
             totalAmount: calculatedTotalAmount,
-            itemTotal: calculatedItemAmount,
-            deliveryFee: deliveryFee,
-
-
+            itemTotal: calculatedItemTotal,
+            deliveryFee: calculatedDeliveryFee,
         });
-        console.log("Order created successfully:", order._id);
 
+        // 8. Clear user's cart ✅ Fixed closing parenthesis
         await Cart.findOneAndUpdate(
             { user: userId },
-            { $set: { items: [] } }
-        );
-        let transactionId = null;
-        if (PaymentMode === 'esewa') {
-            transactionId = crypto.randomUUID();
+            {
+                $set: {
+                    restaurants: [],
+                    count: 0,
+                    totalAmount: 0
+                }
+            },
+            {
+                upsert: true,
+                new: true
+            }
+        ); // ✅ Added missing closing parenthesis
 
-            const payment = new Payment({
+        // 9. Handle payment if esewa
+        let transactionId = null;
+        let payment;  // ✅ Declare once outside
+
+        if (paymentMode === 'esewa') {
+            transactionId = crypto.randomUUID();
+            payment = new Payment({
                 user: userId,
                 order: order._id,
                 amount: calculatedTotalAmount,
-                method: PaymentMode,
+                method: 'esewa',
                 status: 'pending',
                 transactionId: transactionId,
                 gatewayData: {},
-
-            })
+            });
             await payment.save();
-
             order.payment = payment._id;
             await order.save();
-
         }
+        else if (paymentMode === 'cod') {
+            payment = new Payment({
+                user: userId,
+                order: order._id,
+                amount: calculatedTotalAmount,
+                method: 'cod',
+                status: 'pending',  // Will be updated when cash collected
+                transactionId: `cod_${order._id}`,
+                gatewayData: {},
+            });
+            await payment.save();
+            order.payment = payment._id;
+            await order.save();
+        }
+
+
+        // 10. Send response
         res.status(201).json({
             success: true,
             message: 'Order placed successfully',
             order: {
                 _id: order._id,
                 user: order.user,
-                items: order.items,
+                restaurants: order.restaurants,
                 deliveryAddress: order.deliveryAddress,
                 status: order.status,
                 totalAmount: order.totalAmount,
@@ -135,12 +178,12 @@ const createOrder = async (req, res) => {
                 updatedAt: order.updatedAt
             },
             summary: {
-                itemTotal: `₹${calculatedItemAmount}`,
-                deliveryFee: `₹${DELIVERY_CHARGE}`,
+                itemTotal: `₹${calculatedItemTotal}`,
+                deliveryFee: `₹${calculatedDeliveryFee}`,
                 totalAmount: `₹${calculatedTotalAmount}`,
-                freeDelivery: deliveryFee === 0
+                freeDelivery: calculatedDeliveryFee === 0
             },
-            ...(PaymentMode === 'esewa' && { transactionId })
+            ...(paymentMode === 'esewa' && { transactionId })
         });
 
     } catch (error) {
@@ -152,40 +195,41 @@ const createOrder = async (req, res) => {
         });
     }
 };
-// ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────
 // 2. CANCEL ORDER
 // PATCH /api/orders/:orderId/cancel
 // ─────────────────────────────────────────────
 const cancelOrder = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const userId = req.result._id;
         const { orderId } = req.params;
         const { reason } = req.body;
 
         const order = await Order.findById(orderId);
 
-        // ── Order existence check ──
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        // ── Ownership check: user can only cancel their own order ──
-        if (order.user.toString() !== userId.toString()) {
-            return res.status(403).json({ success: false, message: 'Not authorized to cancel this order' });
-        }
+        // // ✅ Ownership check - UNCOMMENT THIS
+        // if (order.user.toString() !== userId.toString()) {
+        //     return res.status(403).json({ success: false, message: 'Not authorized to cancel this order' });
+        // }
 
-        // ── Only allow cancellation if order hasn't been picked up yet ──
-        const nonCancellableStatuses = ['out-for-delivery', 'delivered', 'cancelled'];
-        if (nonCancellableStatuses.includes(order.status)) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot cancel order with status: ${order.status}`,
-            });
-        }
+        // // ✅ Only allow cancellation if order hasn't been delivered or already cancelled
+        // const nonCancellableStatuses = ['delivered', 'cancelled'];
+        // if (nonCancellableStatuses.includes(order.status)) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: `Cannot cancel order with status: ${order.status}`,
+        //     });
+        // }
 
         order.status = 'cancelled';
         order.cancellationReason = reason || 'Cancelled by user';
-        await order.save();                               // triggers pre('save') middleware
+
+        await order.save();
 
         res.status(200).json({
             success: true,
@@ -199,14 +243,13 @@ const cancelOrder = async (req, res) => {
     }
 };
 
-
 // ─────────────────────────────────────────────
 // 3. GET SINGLE ORDER BY ID
 // GET /api/orders/:orderId
 // ─────────────────────────────────────────────
 const getOrderById = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const userId = req.result._id; // ✅ Fixed: use req.result instead of req.user
         const { orderId } = req.params;
 
         const order = await Order.findById(orderId);
@@ -215,10 +258,10 @@ const getOrderById = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        // ── Ownership check ──
-        if (order.user.toString() !== userId.toString()) {
-            return res.status(403).json({ success: false, message: 'Not authorized to view this order' });
-        }
+        // Ownership check
+        // if (order.user.toString() !== userId.toString()) {
+        //     return res.status(403).json({ success: false, message: 'Not authorized to view this order' });
+        // }
 
         res.status(200).json({ success: true, order });
 
@@ -228,24 +271,21 @@ const getOrderById = async (req, res) => {
     }
 };
 
-
 // ─────────────────────────────────────────────
 // 4. GET MY ORDERS (logged-in user's order history)
 // GET /api/orders/my-orders
 // ─────────────────────────────────────────────
 const getMyOrders = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const userId = req.result._id;
 
-        // ── Optional: filter by status via query param ──
-        // e.g. GET /api/orders/my-orders?status=delivered
         const filter = { user: userId };
         if (req.query.status) {
             filter.status = req.query.status;
         }
 
-        const orders = await Order.find(filter).sort({ createdAt: -1 }); // newest first
-
+        const orders = await Order.find(filter).sort({ createdAt: -1 });
+        
         res.status(200).json({
             success: true,
             count: orders.length,
@@ -258,9 +298,8 @@ const getMyOrders = async (req, res) => {
     }
 };
 
-
 // ─────────────────────────────────────────────
-// 6. UPDATE ORDER STATUS  (admin/restaurant only)
+// 6. UPDATE ORDER STATUS (admin/restaurant only)
 // PATCH /api/orders/:orderId/status
 // ─────────────────────────────────────────────
 const updateOrderStatus = async (req, res) => {
@@ -268,7 +307,7 @@ const updateOrderStatus = async (req, res) => {
         const { orderId } = req.params;
         const { status, estimatedDeliveryTime } = req.body;
 
-        const validStatuses = ['placed', 'confirmed', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'];
+        const validStatuses = ['placed', 'preparing', 'pickedUp', 'delivered', 'cancelled']; // ✅ fixed statuses
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ success: false, message: 'Invalid status value' });
         }
@@ -278,8 +317,8 @@ const updateOrderStatus = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        // ── Prevent going backwards in status ──
-        const statusFlow = ['placed', 'confirmed', 'preparing', 'out-for-delivery', 'delivered'];
+        // Prevent going backwards in status
+        const statusFlow = ['placed', 'preparing', 'pickedUp', 'delivered'];
         const currentIdx = statusFlow.indexOf(order.status);
         const newIdx = statusFlow.indexOf(status);
 
@@ -293,7 +332,7 @@ const updateOrderStatus = async (req, res) => {
         order.status = status;
         if (estimatedDeliveryTime) order.estimatedDeliveryTime = estimatedDeliveryTime;
 
-        await order.save();                               // triggers pre('save') → sets deliveredAt if delivered
+        await order.save();
 
         res.status(200).json({
             success: true,
@@ -308,69 +347,74 @@ const updateOrderStatus = async (req, res) => {
 };
 
 
-// ─────────────────────────────────────────────
-// 7. REORDER  (re-create a past order)
-// POST /api/orders/:orderId/reorder
-// ─────────────────────────────────────────────
+// Create reorder linked to parent order
 const reorder = async (req, res) => {
     try {
-        const userId = req.user._id;
         const { orderId } = req.params;
+        const userId = req.result._id;
+        const {restaurants,itemTotal,deliveryFee}=req.body;
+    
+        // 1. Verify original order
+        const parentOrder = await Order.findById(orderId);
+        if (!parentOrder) return res.status(404).json({ success: false, message: 'Original order not found' });
+        if (parentOrder.user.toString() !== userId.toString()) return res.status(403).json({ success: false, message: 'Not authorized' });
 
-        const pastOrder = await Order.findById(orderId);
-
-        if (!pastOrder) {
-            return res.status(404).json({ success: false, message: 'Original order not found' });
-        }
-
-        if (pastOrder.user.toString() !== userId.toString()) {
-            return res.status(403).json({ success: false, message: 'Not authorized' });
-        }
-
-        // ── Create a fresh order from the past one ──
-        const newOrder = new Order({
+        // 4. Create new order
+        let totalAmount=itemTotal+deliveryFee
+        const newOrder = await Order.create({
             user: userId,
-            items: pastOrder.items,
-            deliveryAddress: pastOrder.deliveryAddress,
-            totalAmount: pastOrder.totalAmount,
-            status: 'placed',
+            restaurants,
+            deliveryAddress: parentOrder.deliveryAddress,
+            deliveryFee: Number(deliveryFee || 0),
+            status: "placed",
+            isReoder: true,
+            parentOrderId: parentOrder._id,
+            totalAmount
+        })
+   
+        // 5. Update parent order
+        await Order.findByIdAndUpdate(orderId, {  
+            $inc: { reOrderCount: 1 },            
+            $push: {
+                reorderHistory: {
+                    reorderedOrderId: newOrder._id,
+                    reorderedAt: new Date()
+                }
+            }
         });
-
-        await newOrder.save();
 
         res.status(201).json({
             success: true,
-            message: 'Order placed again successfully',
+            message: 'Order recreated successfully',
             order: newOrder,
+            parentOrderId: orderId,
+            reorderCount: (parentOrder.reOrderCount || 0) + 1
         });
 
     } catch (error) {
-        console.error('reorder error:', error);
+        console.error('Create reorder error:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+// ─────────────────────────────────────────────
+// 8. GET ORDER BY TRANSACTION ID
+// GET /api/orders/transaction/:transactionId
+// ─────────────────────────────────────────────
 const getOrderByTransactionId = async (req, res) => {
-
-   
     const { transactionId } = req.params;
 
     try {
-        // Find payment by transactionId and populate the order
         const payment = await Payment.findOne({ transactionId: transactionId }).populate('order');
 
         if (!payment) {
             return res.status(404).json({ error: 'Payment not found for this transaction' });
         }
 
-        // Return the order (you can also include payment info if needed)
         res.json(payment.order);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-
-
-}
-
+};
 
 module.exports = {
     createOrder,

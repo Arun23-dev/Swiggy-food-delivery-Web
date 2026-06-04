@@ -21,7 +21,8 @@ const paymentSchema = new Schema({
     },
     method: {
         type: String,
-        enum: ['esewa', 'khalti', 'cod', 'card'],
+        enum: ['esewa', 'cod'],
+        default:'esewa',
         required: true,
     },
     status: {
@@ -32,8 +33,8 @@ const paymentSchema = new Schema({
     transactionId: {
         type: String,
         default: null,
-        unique: true,  // Consider adding unique constraint
-        index: true    // Add index for faster lookups
+        unique:true  // Consider adding unique constraint
+
     },
     gatewayData: {
         pidx: { type: String },      // Payment ID from gateway

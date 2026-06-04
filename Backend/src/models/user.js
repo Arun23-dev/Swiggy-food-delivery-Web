@@ -42,16 +42,27 @@ const userSchema = new Schema({
         data: Buffer,
         contentType: String,
     }],
-    address: [{
-        label: String,
-        street: String,
-        city: String,
-        pincode: String,
-        isDefault: { type: Boolean, default: false },
-    },],
-    isActive: { type: Boolean, default: true },
+    address: {
+        type:
+            [{
+                label: String,
+                street: String,
+                city: String,
+                pincode: String,
+                isDefault: { type: Boolean, default: false },
+            },],
+        validate:
+        {
+            validator: function (addresses) {
+                return addresses.length <= 3;
+            },
+            message: "A user can have at most 3 address",
+        },
 
+    },
+    isActive: { type: Boolean, default: true },
 },
+
     {
         timestamps: true,
     }
