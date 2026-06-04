@@ -15,6 +15,7 @@ const paymentRouter = require('./src/routes/payment-routes');
 const restaurantRouter = require('./src/routes/restaurant-routes');
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(cors({
     origin: [

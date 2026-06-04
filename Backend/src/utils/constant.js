@@ -5,6 +5,4 @@ module.exports = {
     FREE_DELIVERY_THRESHOLD,
     DELIVERY_CHARGE
 
-
-
 }

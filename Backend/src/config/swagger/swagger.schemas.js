@@ -485,7 +485,7 @@ const ErrorResponse = {
     }
 };
 
-module.exports={
+module.exports = {
     User,
     Payment,
     Order,
@@ -493,5 +493,5 @@ module.exports={
     Restaurant,
     SuccessResponse,
     ErrorResponse
-   
+
 }

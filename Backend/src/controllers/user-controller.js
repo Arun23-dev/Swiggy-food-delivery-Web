@@ -34,7 +34,7 @@ const register = async (req, res) => {
                 role: 'user'
             },
             process.env.JWT_KEY,
-            { expiresIn: 60 * 60 }
+            { expiresIn: 7 * 24 * 60 * 60  }
         );
 
         res.cookie('token', token, {
@@ -68,9 +68,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
 
-
         const { emailId, password } = req.body;
-
 
         if (!emailId || !password) {
             throw new Error("Invalid credentials");
@@ -91,7 +89,7 @@ const login = async (req, res) => {
         const token = jwt.sign(
             { _id: user._id, emailId: emailId, role: user.role },
             process.env.JWT_KEY,
-            { expiresIn: 60 * 60 }
+            { expiresIn: 7 * 24 * 60 * 60 }
         );
 
         res.cookie('token', token, {
