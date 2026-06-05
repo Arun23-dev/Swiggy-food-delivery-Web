@@ -55,7 +55,6 @@ export const changePassword = createAsyncThunk(
   }
 )
 
-
 export const checkAuth = createAsyncThunk(
   'user/checkAuth',
   async (_, { rejectWithValue }) => {
@@ -214,6 +213,8 @@ const userSlice = createSlice({
         state.authLoading = false;
         state.error = action.payload;
         state.user = null;
+        state.isAuthenticated = false;
+
       })
 
       // logout

@@ -136,13 +136,6 @@ export default function Dashboard() {
 
   return (
     <div className="w-full min-h-full bg-gray-50 p-6">
-      {/* Welcome */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          {isAuthenticated ? `Hey, ${user?.firstName || 'there'} 👋` : 'Welcome back 👋'}
-        </h1>
-        <p className="text-gray-500 mt-1">Here's a summary of your activity</p>
-      </div>
 
       {/* Top KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">

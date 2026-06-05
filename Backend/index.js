@@ -18,11 +18,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'https://swiggy-food-delivery-web-dyl3.vercel.app',
-        'https://www.swiggytech.me'
-    ],
+    origin: process.env.FRONTEND_URL,
     credentials: true,
 }));
 

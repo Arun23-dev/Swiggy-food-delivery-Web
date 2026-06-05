@@ -17,6 +17,7 @@ export default function useAuth(customButton = null) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -123,7 +124,7 @@ export default function useAuth(customButton = null) {
         </div>
         <div className="flex items-center gap-1">
           <span className="text-sm font-medium text-gray-700">
-            {user?.firstName || user?.name || 'User'}
+            {user?.firstName}
           </span>
           <svg
             className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`}
@@ -209,7 +210,7 @@ export default function useAuth(customButton = null) {
         <div onClick={handleAuthClick} className="cursor-pointer">
           {customButton || (
             <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Sign In / Register
+              Sign In 
             </button>
           )}
         </div>

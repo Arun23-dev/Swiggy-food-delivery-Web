@@ -36,19 +36,7 @@ export const fetchRestaurants = createAsyncThunk(
         }
     }
 );
-// Load more (WITH offset)
-export const loadMoreRestaurants = createAsyncThunk(
-    'resturant/loadMoreRestaurants',
-    async ({ offset }, { rejectWithValue }) => {
-        try {
-            const response = await axiosClient.get(`api/restaurants?offset=${offset}`);
-            return response.data;
 
-        } catch (error) {
-            return rejectWithValue({ message: "Error loading more" });
-        }
-    }
-);
 
 
 
@@ -56,13 +44,9 @@ const restaurantSlice = createSlice({
     name: 'restaurant',
     initialState: {
         data: null,
-        allRestaurants: [],
-        offset: 0,        // Same as your working code's offset
-        hasMore: true,
+        allRestaurants: [],  // Same as your working code's offset
         loading: false,
-        loadingMore: false,
         error: null,
-        loadMoreError: null,
         cachedAt: null,
     },
     // NO reducers section - no resetRestaurants needed!
@@ -76,7 +60,6 @@ const restaurantSlice = createSlice({
                 state.data = action.payload;
                 const restaurants = extractRestaurantsFromCards(action.payload?.data?.cards)
                 state.allRestaurants = restaurants;
-                state.offset = restaurants.length;  // Same as setOffset(initialRestaurants.length)
                 state.loading = false;
                 state.cachedAt = Date.now();
             })
@@ -85,28 +68,6 @@ const restaurantSlice = createSlice({
                 state.loading = false;
             })
 
-            .addCase(loadMoreRestaurants.pending, (state) => {
-                state.loadingMore = true;
-                state.loadMoreError = null;
-            })
-            .addCase(loadMoreRestaurants.fulfilled, (state, action) => {
-                const newRestaurants = extractRestaurantsFromCards(action.payload?.data?.cards);
-                if (!newRestaurants.length) {
-                    state.hasMore = false;
-                } else {
-                
-                    const existingIds = new Set(state.allRestaurants.map(r => r.info.id));
-                    const unique = newRestaurants.filter(r => !existingIds.has(r.info.id));
-
-                    state.allRestaurants = [...state.allRestaurants, ...unique];
-                    state.offset = state.offset + newRestaurants.length; // keep original length for API offset
-                }
-                state.loadingMore = false;
-            })
-            .addCase(loadMoreRestaurants.rejected, (state, action) => {
-                state.loadMoreError = action.payload;
-                state.loadingMore = false;
-            });
     }
 });
 

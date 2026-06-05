@@ -342,19 +342,19 @@ const PaymentRow = ({ payment }) => {
 
 // ─── Main PaymentPage ──────────────────────────────────────────────────────────
 export default function PaymentPage() {
-    const { user, authLoading,paymentLoading} = useSelector(state => state.user);
+    const { user, authLoading, paymentLoading } = useSelector(state => state.user);
     const { orders, loading, ordersFetched } = useSelector((state) => state.order);
 
     const dispatch = useDispatch();
 
     useEffect(() => {
-    
-        if(paymentLoading){
-         console.log("Useeffect calledn")
-             dispatch(getMyPayments());
+
+        if (paymentLoading) {
+
+            dispatch(getMyPayments());
 
         }
-    }, [orders.length,dispatch]);
+    }, [orders?.length, dispatch]);
 
 
     const paymentDetails = user?.payment;
@@ -456,14 +456,7 @@ export default function PaymentPage() {
 
     return (
         <div className="w-full min-h-full bg-gray-50 p-2">
-            <div className="flex items-center justify-between mb-3">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
-                    <p className="text-gray-400 text-sm mt-0.5">
-                        {payments.length} total transactions
-                    </p>
-                </div>
-            </div>
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
                 {kpis.map((kpi, i) => (

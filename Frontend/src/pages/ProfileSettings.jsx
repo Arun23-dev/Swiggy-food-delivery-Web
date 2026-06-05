@@ -428,16 +428,7 @@ export default function ProfileSettings() {
       </AnimatePresence>
 
       {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          Profile Settings
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">Manage your account information and preferences</p>
-      </motion.div>
+    
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
