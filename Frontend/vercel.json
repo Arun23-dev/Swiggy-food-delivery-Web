@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://swiggy-project-hc8b.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
